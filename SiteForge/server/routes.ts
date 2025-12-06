@@ -10,7 +10,16 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
+  // Health check endpoint for monitoring and deployment verification
+  app.get("/api/health", (req, res) => {
+    res.status(200).json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || "development",
+    });
+  });
+
   app.post("/api/upload", async (req, res) => {
     try {
       const parsed = uploadReportRequestSchema.safeParse(req.body);
