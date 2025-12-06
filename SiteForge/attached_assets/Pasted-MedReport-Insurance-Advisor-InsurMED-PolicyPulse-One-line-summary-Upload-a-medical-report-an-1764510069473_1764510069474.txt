@@ -1,0 +1,274 @@
+MedReport → Insurance Advisor (InsurMED / PolicyPulse)
+
+One-line summary
+
+Upload a medical report and your current policy (optional) → get a simple, human-readable health summary, a ranked list of best insurance plans for your medical profile and budget, and a clear money-saving comparison showing how much you can save (or why keeping existing policy is better).
+
+Landing / Front page — content & layout
+
+Hero
+
+Headline: “Right insurance. Based on your medical report.”
+
+Subhead: “Upload your medical report (and your current policy if you have one). We extract medical facts, compute risk, and recommend the best, cost-saving insurance plans — with an easy one-page report.”
+
+Primary CTA: Upload Report
+
+Secondary CTA: Compare my existing policy (for users who want savings comparison)
+
+Trust line: “Privacy-first • Demo uses synthetic data”
+
+Below hero — three tiles
+
+Upload medical report — automatic extraction & health summary.
+
+Compare policies — upload current policy PDF or enter premium & cover to compare.
+
+Get best plan & savings — ranked recommendations + clear savings breakdown.
+
+Quick FAQ & Privacy note and a small mockup of the one-page report.
+
+Core user flows (high level)
+
+User uploads medical report PDF/image. (Optional) uploads current policy or enters policy details.
+
+System extracts medical entities, computes short & long term risk, and normalizes values.
+
+User reviews and edits extracted fields if needed.
+
+System asks for budget and priorities (low premium / high cover / low waiting period).
+
+System returns: one-page easy report + top 3 recommended plans + savings comparison vs existing policy.
+
+User downloads PDF, or uses “Apply” or “Contact provider” templates.
+
+Must-have features (MVP + money-saving)
+A. Extraction & understandable health summary
+
+OCR & medical NER: extract tests (HbA1c, BP etc.), diagnoses, medications, age, gender.
+
+Produce a Plain-Language Health Summary (short paragraph): e.g., “Your report shows Type 2 Diabetes (HbA1c 8.2%) and high blood pressure (150/95). This increases short-term hospitalization risk and may affect premiums.”
+
+Show key values with normal ranges and color tags: Normal / Borderline / High.
+
+B. Risk scoring & simple explanation
+
+Short-term & Long-term risk (0–100) with label (Low/Moderate/High).
+
+For each major contributing factor show short explanation: “High HbA1c contributed +20 to your risk score.”
+
+C. Existing policy import & parsing (for savings)
+
+Allow upload of current policy PDF OR manual entry: provider, plan name, sum insured, annual premium, co-pay, waiting periods, exclusions.
+
+Parse common policy fields with regex + option to edit.
+
+D. Plan matching & ranking (best insurance)
+
+Use plan DB (JSON) and compute Match Score based on:
+
+CoverageFit (does plan cover the user’s conditions)
+
+WaitingPeriodSuitability
+
+Affordability (estimated premium vs user budget)
+
+CoverageQuality (sum insured, co-pay, network size)
+
+Claim friendliness proxy (network_size_score, provider reputation)
+
+Return top 3 plans with: Match Score, Estimated Annual Premium, Estimated Savings vs existing policy, and Human-readable reason.
+
+E. Money-saving comparison & calculator
+
+If user provided existing policy: compute Net Annual Cost = annual premium + expected OOP (co-pay % * expected annual health usage estimate based on risk score).
+
+For each recommended plan compute the same Net Annual Cost.
+
+Show Savings = existing Net Annual Cost − recommended Net Annual Cost (positive means you save). Show payback horizon if switching (e.g., new waiting periods may delay benefit).
+
+Provide visual comparison: bar chart (annual cost) and a simple table: Premium | Sum insured | Co-pay | Waiting | Savings.
+
+F. Explainability & decision checklist
+
+For each recommended plan, show:
+
+Why it’s recommended (template sentences).
+
+Which clauses to watch (pre-existing waiting period, exclusions).
+
+Confidence score for coverage on user's conditions.
+
+Provide Actionable Next Steps card: “Call provider — script”, “Documents to prepare”, “Apply link”.
+
+G. One-page human-readable report (downloadable PDF)
+
+Top area: Plain-language health summary + risk labels.
+
+Middle: Extracted key values (table) with color-coded abnormal items.
+
+Bottom: Top 3 plan recommendations with cost comparison and explicit savings amount (or “No cheaper plan found that provides same coverage”).
+
+Footer: privacy note + disclaimer (“Not legal/medical advice”).
+
+UX details (behaviour & editability)
+
+On extraction page, show each extracted field with an Edit icon — users can correct wrong values before matching.
+
+Budget slider and priority toggles (Low premium / High cover / Minimal waiting).
+
+“Compare to my policy” toggle appears only if user uploaded current policy.
+
+Tooltips for technical words (waiting period, co-pay, sum insured).
+
+Progress steps at top: Upload → Extract → Review → Recommendations → Download.
+
+Data & scoring logic (concise)
+Data models (important fields)
+
+MedicalReport
+
+{
+  "id":"R001",
+  "age":58,
+  "gender":"Female",
+  "diagnoses":["Type 2 Diabetes"],
+  "tests":[{"name":"HbA1c","value":8.2,"unit":"%","range":"4.0-5.6"}],
+  "smoking_status":"No"
+}
+
+
+Policy
+
+{
+  "provider":"Acme",
+  "plan_name":"Silver Protect",
+  "sum_insured":500000,
+  "annual_premium":14000,
+  "pre_existing_wait_years":2,
+  "co_pay_pct":10,
+  "exclusions":["organ transplant"]
+}
+
+
+InsurancePlan
+
+fields: id, provider, plan_name, sum_insured, base_premium, covers[], pre_existing_wait_years, co_pay_pct, network_size_score, notes, url
+
+Match Score (0–100) — weighted composite
+
+CoverageFit (0–50): percent of user conditions covered × 50.
+
+Affordability (0–25): normalized difference between user budget (or existing premium) and estimated premium.
+
+WaitingPeriodSuitability (0–15): penalize for long waiting periods for user’s conditions.
+
+CoverageQuality (0–10): sum_insured & network score.
+
+Net Annual Cost calculation (for savings)
+
+Expected_OOP = expected_annual_health_spend * (co_pay_pct/100)
+
+expected_annual_health_spend can be a small function of risk score and baseline usage (e.g., Low=₹5,000, Moderate=₹20,000, High=₹60,000) — configurable constants for MVP.
+
+NetAnnualCost = base_premium + Expected_OOP
+
+Savings = ExistingPolicy.NetAnnualCost - Plan.NetAnnualCost
+
+Display Savings as positive rupee amount and percentage.
+
+Example thresholds & templates
+
+If Savings > ₹5,000 and CoverageFit >= 70% → label “Recommended — Save ₹X/yr”.
+
+If Savings negative but CoverageFit much higher → label “Consider (better coverage but higher cost)”.
+
+APIs (MVP)
+
+POST /api/upload — file upload → returns report_id
+
+GET /api/report/{id} — extraction, risk scores
+
+POST /api/report/{id}/match — input: budget, priorities, existing_policy(optional) → returns ranked plans + savings calculation
+
+POST /api/report/{id}/export — generate/download PDF
+
+POST /api/policy/parse — parse uploaded policy PDF into structured policy fields (returns editable fields)
+
+Non-functional & privacy
+
+Temporary file retention: default 24 hours then auto-delete. Option to not store PII.
+
+HTTPS, simple auth for admin.
+
+Local demo: acceptable for hackathon; production requires compliance (HIPAA / region equivalent).
+
+Clearly visible consent & disclaimer before processing health documents.
+
+Acceptance criteria (hackathon)
+
+Upload a medical report and see a plain-language health summary.
+
+Extract at least HbA1c, BP, and at least one diagnosis with editable fields.
+
+Upload or enter existing policy → app computes Net Annual Cost for both current policy and top 3 recommended plans.
+
+App displays Savings (₹ and %) and a visual bar chart comparison.
+
+One-page downloadable PDF that judges can read and understand in <60 seconds.
+
+Demo runs locally and completes end-to-end flow.
+
+Demo script (2–4 minutes)
+
+Landing page + “Upload Report” (click). Upload sample_report.pdf.
+
+Show extraction page: edit an incorrect value (demonstrates editability).
+
+Toggle “Compare my policy” and upload sample_policy.pdf (or enter values).
+
+Show Recommendations: Top 3 plans with Match Score and Savings column; expand one plan to show reasoning.
+
+Download the one-page report and point to the savings section and the simple health summary.
+
+Conclude: “This helps users choose a plan that fits their health and saves money — or shows when keeping the current plan is better.”
+
+UI copy examples (for clarity)
+
+Health summary sentence: “Your report indicates Type 2 Diabetes (HbA1c 8.2%) and elevated BP (150/95). This results in a High short-term risk and increases expected yearly out-of-pocket costs.”
+
+Savings card header: “Estimated Annual Savings vs Your Current Policy”
+
+Action button: “Download One-Page Recommendation”
+
+Small tip: “If a recommended plan shows a waiting period, consider short-term bridge coverage if you need immediate claims.”
+
+Edge cases & fallback
+
+If OCR fails or low confidence: show raw text and let user paste values manually.
+
+If no existing policy provided: show comparison vs median market plan or a “Best for your budget” baseline.
+
+If no plan offers equal coverage at lower cost: show tradeoff table (More coverage for +₹X/year).
+
+Future improvements (stretch goals)
+
+Train a model for expected annual usage (fine-tune with de-identified claims data).
+
+Live insurer API integrations for exact premium quotes & instant applications.
+
+Multilingual OCR/NER and mobile app.
+
+User accounts, secure storage, and compliance certification.
+
+If you want, I can now generate any of the following immediately (pick one or more — I’ll produce it right here):
+
+A ready-to-use one-page PDF report template (text content you can copy into a PDF tool).
+
+A sample existing policy JSON + parsed output example to demo savings logic.
+
+A sample extraction + recommendation — synthetic medical report and the app’s one-page output (so you can demo quickly).
+
+The exact frontend text & buttons (copy-pasteable HTML snippet) for the landing + extraction page.
+
+Pick which asset you want now and I’ll create it in this chat.
