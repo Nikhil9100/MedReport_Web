@@ -13,6 +13,7 @@ import { Header } from "@/components/header";
 import { ProgressStepper } from "@/components/progress-stepper";
 import { HealthSummaryCard } from "@/components/health-summary-card";
 import { MedicalValuesTable } from "@/components/medical-values-table";
+import { MedicalReportViewer } from "@/components/medical-report-viewer";
 import { PolicyInput } from "@/components/policy-input";
 import { BudgetPreferences } from "@/components/budget-preferences";
 import { useToast } from "@/hooks/use-toast";
@@ -158,6 +159,10 @@ export function ReviewPage() {
                 Verify the extracted information and make any corrections before we generate your recommendations.
               </p>
             </div>
+
+            {report.medicalReport && (
+              <MedicalReportViewer report={report.medicalReport} />
+            )}
 
             {report.healthSummary && (
               <HealthSummaryCard summary={report.healthSummary} />
