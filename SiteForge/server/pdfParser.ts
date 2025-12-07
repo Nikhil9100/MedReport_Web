@@ -115,54 +115,96 @@ export async function parsePDF(pdfBuffer: Buffer): Promise<ParseResult> {
 
 /**
  * Extract text from PDF streams using regex patterns
- * Works for PDFs with embedded text content
+ * Handles multiple PDF encoding formats and text extraction methods
  */
 function extractPDFText(pdfBuffer: Buffer): string {
   try {
-    const pdfString = pdfBuffer.toString("latin1");
-
-    // Pattern 1: Extract text between parentheses in text streams (Tj operator)
     let extractedText = "";
-    const textMatches = pdfString.match(/\(([^)]+)\)/g);
+    
+    // Try UTF-8 first (most common for modern PDFs)
+    let pdfString = pdfBuffer.toString("utf8");
+    
+    // If UTF-8 is mostly garbage, try latin1
+    if (!pdfString.includes("stream") && !pdfString.includes("endstream")) {
+      pdfString = pdfBuffer.toString("latin1");
+    }
+
+    // Pattern 1: Extract text between parentheses - handles Tj operators
+    const textMatches = pdfString.match(/\(([^()\\]|\\[\\()bfnrt]|\\[0-7]{1,3})*\)/g);
     if (textMatches && textMatches.length > 0) {
       extractedText = textMatches
         .map(match => {
           try {
-            const text = match.slice(1, -1);
-            // Decode basic PDF escape sequences
-            return text
-              .replace(/\\n/g, " ")
+            let text = match.slice(1, -1);
+            
+            // Decode PDF escape sequences
+            text = text
+              .replace(/\\n/g, "\n")
+              .replace(/\\r/g, "\r")
+              .replace(/\\t/g, "\t")
               .replace(/\\\//g, "/")
-              .replace(/\\\\/g, "\\");
+              .replace(/\\\\/g, "\\")
+              .replace(/\\b/g, "\b")
+              .replace(/\\f/g, "\f");
+            
+            // Decode octal sequences
+            text = text.replace(/\\([0-7]{1,3})/g, (match, octal) => {
+              return String.fromCharCode(parseInt(octal, 8));
+            });
+            
+            return text;
           } catch {
             return "";
           }
         })
-        .join(" ")
-        .substring(0, 10000); // Limit to 10KB
+        .filter(t => t.trim().length > 0)
+        .join(" ");
     }
 
-    // Pattern 2: Extract from BT...ET (begin text ... end text) blocks
-    if (!extractedText.trim()) {
-      const btMatches = pdfString.match(/BT[\s\S]*?ET/g);
+    // Pattern 2: Extract from BT...ET (text positioning blocks)
+    if (extractedText.length < 100) {
+      const btMatches = pdfString.match(/BT[\s\S]{0,200}?ET/g);
       if (btMatches && btMatches.length > 0) {
         const btText = btMatches
           .map(match => {
-            const content = match.match(/\(([^)]+)\)/g);
+            // Extract all parentheses content
+            const content = match.match(/\(([^()]*)\)/g);
             return content ? content.map(m => m.slice(1, -1)).join(" ") : "";
           })
-          .join(" ")
-          .substring(0, 10000);
+          .filter(t => t.trim().length > 0)
+          .join(" ");
+        
         if (btText.length > extractedText.length) {
           extractedText = btText;
         }
       }
     }
 
-    // Clean up extracted text
+    // Pattern 3: Extract from content streams (last resort)
+    if (extractedText.length < 100) {
+      const streamMatches = pdfString.match(/stream\n([\s\S]{0,5000}?)\nendstream/g);
+      if (streamMatches) {
+        const streamText = streamMatches
+          .map(m => m.replace(/stream\n/, "").replace(/\nendstream/, ""))
+          .map(s => {
+            // Extract readable ASCII content
+            return s.match(/[\x20-\x7E\n\r\t]+/g)?.join(" ") || "";
+          })
+          .filter(t => t.length > 20)
+          .join(" ");
+        
+        if (streamText.length > extractedText.length) {
+          extractedText = streamText;
+        }
+      }
+    }
+
+    // Clean up the extracted text
     return extractedText
       .replace(/\s+/g, " ")
+      .substring(0, 15000) // Limit to 15KB
       .trim();
+      
   } catch (error) {
     console.warn("PDF text extraction failed:", error);
     return "";

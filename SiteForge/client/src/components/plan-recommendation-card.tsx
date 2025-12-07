@@ -19,28 +19,29 @@ interface PlanRecommendationCardProps {
   className?: string;
 }
 
-// Insurance company logo mapping
-const insuranceCompanyLogos: Record<string, string> = {
-  "HDFC Insurance": "https://upload.wikimedia.org/wikipedia/en/thumb/5/52/HDFC_ERGO_logo.svg/1200px-HDFC_ERGO_logo.svg.png",
-  "HDFC": "https://upload.wikimedia.org/wikipedia/en/thumb/5/52/HDFC_ERGO_logo.svg/1200px-HDFC_ERGO_logo.svg.png",
-  "ICICI Lombard": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/ICICI_Lombard_General_Insurance_Company_Limited_Logo.svg/1200px-ICICI_Lombard_General_Insurance_Company_Limited_Logo.svg.png",
-  "ICICI": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/ICICI_Lombard_General_Insurance_Company_Limited_Logo.svg/1200px-ICICI_Lombard_General_Insurance_Company_Limited_Logo.svg.png",
-  "Apollo Munich": "https://upload.wikimedia.org/wikipedia/en/thumb/0/05/Apollo_Munich_Health_Insurance_logo.svg/1200px-Apollo_Munich_Health_Insurance_logo.svg.png",
-  "Apollo": "https://upload.wikimedia.org/wikipedia/en/thumb/0/05/Apollo_Munich_Health_Insurance_logo.svg/1200px-Apollo_Munich_Health_Insurance_logo.svg.png",
-  "Max Bupa": "https://upload.wikimedia.org/wikipedia/en/thumb/4/47/Max_Bupa_Logo.svg/1200px-Max_Bupa_Logo.svg.png",
-  "Aditya Birla Health": "https://upload.wikimedia.org/wikipedia/en/thumb/1/1f/Aditya_Birla_Health_Insurance_Logo.svg/1200px-Aditya_Birla_Health_Insurance_Logo.svg.png",
-  "Aditya Birla": "https://upload.wikimedia.org/wikipedia/en/thumb/1/1f/Aditya_Birla_Health_Insurance_Logo.svg/1200px-Aditya_Birla_Health_Insurance_Logo.svg.png",
-  "Star Health": "https://upload.wikimedia.org/wikipedia/en/thumb/9/9d/Star_Health_and_Allied_Insurance_Company_Limited_Logo.svg/1200px-Star_Health_and_Allied_Insurance_Company_Limited_Logo.svg.png",
-  "Star": "https://upload.wikimedia.org/wikipedia/en/thumb/9/9d/Star_Health_and_Allied_Insurance_Company_Limited_Logo.svg/1200px-Star_Health_and_Allied_Insurance_Company_Limited_Logo.svg.png",
+// Insurance company logo mapping - using initials as colorful badges
+const insuranceCompanyColors: Record<string, { bg: string; text: string; initials: string }> = {
+  "HDFC Insurance": { bg: "bg-red-600", text: "text-white", initials: "HD" },
+  "HDFC": { bg: "bg-red-600", text: "text-white", initials: "HD" },
+  "ICICI Lombard": { bg: "bg-blue-600", text: "text-white", initials: "IC" },
+  "ICICI": { bg: "bg-blue-600", text: "text-white", initials: "IC" },
+  "Apollo Munich": { bg: "bg-purple-600", text: "text-white", initials: "AP" },
+  "Apollo": { bg: "bg-purple-600", text: "text-white", initials: "AP" },
+  "Max Bupa": { bg: "bg-amber-600", text: "text-white", initials: "MB" },
+  "Bajaj Allianz": { bg: "bg-indigo-600", text: "text-white", initials: "BA" },
+  "Star Health": { bg: "bg-green-600", text: "text-white", initials: "SH" },
+  "Star": { bg: "bg-green-600", text: "text-white", initials: "SH" },
+  "Aditya Birla": { bg: "bg-orange-600", text: "text-white", initials: "AB" },
 };
 
-function getCompanyLogo(provider: string): string | null {
-  for (const [key, logo] of Object.entries(insuranceCompanyLogos)) {
+function getCompanyBranding(provider: string): { bg: string; text: string; initials: string } {
+  for (const [key, branding] of Object.entries(insuranceCompanyColors)) {
     if (provider.includes(key) || key.includes(provider)) {
-      return logo;
+      return branding;
     }
   }
-  return null;
+  // Default branding
+  return { bg: "bg-slate-600", text: "text-white", initials: provider.substring(0, 2).toUpperCase() };
 }
 
 export function PlanRecommendationCard({ 
@@ -66,28 +67,15 @@ export function PlanRecommendationCard({
   };
 
   const rankBadge = getRankBadge();
-  const companyLogo = getCompanyLogo(plan.provider);
+  const branding = getCompanyBranding(plan.provider);
 
   return (
     <Card className={cn("overflow-hidden", className)} data-testid={`card-plan-${plan.id}`}>
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="flex items-start gap-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-muted text-muted-foreground shrink-0">
-              {companyLogo ? (
-                <img 
-                  src={companyLogo} 
-                  alt={plan.provider}
-                  className="h-10 w-10 object-contain"
-                  onError={(e) => {
-                    // Fallback to Building2 icon if logo fails to load
-                    const img = e.target as HTMLImageElement;
-                    img.style.display = "none";
-                  }}
-                />
-              ) : (
-                <Building2 className="h-6 w-6" />
-              )}
+            <div className={cn("flex items-center justify-center w-12 h-12 rounded-lg shrink-0 font-bold text-lg", branding.bg, branding.text)}>
+              {branding.initials}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">

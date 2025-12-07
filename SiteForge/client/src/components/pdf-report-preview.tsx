@@ -43,34 +43,16 @@ export function PDFReportPreview({
 
   return (
     <Card className={cn("", className)} data-testid="card-pdf-preview">
-      <CardHeader className="flex flex-row items-center justify-between gap-4">
+      <CardHeader>
         <div>
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
             One-Page Report Preview
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Download your personalized insurance recommendation report
+            Your personalized insurance recommendation report (use download buttons below for JSON, HTML, or CSV formats)
           </p>
         </div>
-        <Button 
-          onClick={onDownload} 
-          disabled={isDownloading}
-          className="gap-2"
-          data-testid="button-download-pdf"
-        >
-          {isDownloading ? (
-            <>
-              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Download className="h-4 w-4" />
-              Download PDF
-            </>
-          )}
-        </Button>
       </CardHeader>
       <CardContent>
         <div className="border rounded-lg p-6 bg-white dark:bg-background space-y-6" style={{ aspectRatio: "8.5/11" }}>

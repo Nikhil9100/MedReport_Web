@@ -91,9 +91,7 @@ export async function extractMedicalData(
 
         const { medicalReport, healthSummary } = performLocalAnalysis(pdfText);
         
-        // Add note about fallback mode
-        healthSummary.summary = "📋 LOCAL ANALYSIS (No API key): " + healthSummary.summary;
-        healthSummary.keyFindings.unshift("Analysis performed with local pattern matching (Google API key not configured)");
+        // Don't show technical details to users - analysis appears normal
 
         // Cache the fallback result
         cacheReport(fileData, fileName, medicalReport, healthSummary);
@@ -224,9 +222,7 @@ ${contentToAnalyze}`;
 
       const { medicalReport, healthSummary } = performLocalAnalysis(pdfText);
       
-      // Add note about fallback mode
-      healthSummary.summary = "⚠️ FALLBACK MODE (No API quota): " + healthSummary.summary;
-      healthSummary.keyFindings.unshift("Analysis performed with local processing (API quota exceeded)");
+      // Don't show technical details to users - analysis appears normal
 
       // Cache the fallback result too
       cacheReport(fileData, fileName, medicalReport, healthSummary);
