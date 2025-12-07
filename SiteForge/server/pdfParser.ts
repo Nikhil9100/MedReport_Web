@@ -83,13 +83,48 @@ export async function parsePDF(pdfBuffer: Buffer): Promise<ParseResult> {
       };
     }
 
-    // For PDF files, we'll extract content using OpenAI's vision API
-    // Return placeholder - actual extraction happens in openai.ts
+    // Try to extract text from PDF streams
+    let extractedText = "";
+    try {
+      // Look for text in parentheses within PDF streams (common text format)
+      const pdfString = pdfBuffer.toString("latin1");
+      
+      // Extract text between parentheses in PDF streams
+      const textMatches = pdfString.match(/\(([^)]+)\)/g);
+      if (textMatches) {
+        extractedText = textMatches
+          .map(match => match.slice(1, -1)) // Remove parentheses
+          .join(" ")
+          .substring(0, 5000); // Limit to first 5000 chars
+        console.log(`📄 PDF text extraction: Found ${textMatches.length} text segments, total length: ${extractedText.length} chars`);
+        console.log(`📄 Sample extracted text: ${extractedText.substring(0, 200)}`);
+      }
+      
+      // Also try to extract text after "BT" (begin text) markers
+      const btMatches = pdfString.match(/BT[\s\S]*?ET/g);
+      if (btMatches && btMatches.length > 0) {
+        const btText = btMatches
+          .map(match => {
+            // Extract content from Tj and Td operators
+            const content = match.match(/\(([^)]+)\)/g);
+            return content ? content.map(m => m.slice(1, -1)).join(" ") : "";
+          })
+          .join(" ");
+        if (btText.length > extractedText.length) {
+          extractedText = btText.substring(0, 5000);
+        }
+      }
+    } catch (e) {
+      // If text extraction fails, we'll still return the PDF as valid
+      // The AI or fallback analyzer can attempt processing
+      console.error(`📄 PDF text extraction error: ${e instanceof Error ? e.message : "Unknown error"}`);
+    }
+
     return {
-      text: "", // Content will be extracted by OpenAI
+      text: extractedText,
       pageCount: 1, // We estimate 1 page
-      isMedicalDocument: true, // Will be validated by OpenAI
-      confidence: 50, // Medium confidence until OpenAI processes it
+      isMedicalDocument: true, // Valid PDF is considered potentially medical
+      confidence: 50, // Medium confidence until content is analyzed
     };
   } catch (error) {
     return {
