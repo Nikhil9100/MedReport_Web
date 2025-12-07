@@ -6,6 +6,7 @@ import { matchPlans, calculateNetAnnualCost } from "./matching";
 import { uploadReportRequestSchema, matchRequestSchema, policySchema } from "@shared/schema";
 import { validateMedicalFile, formatFileSize } from "./fileValidator";
 import { generateStructuredReport, formatReportAsJSON, formatReportAsHTML, formatReportAsCSV } from "./reportGenerator";
+import { generatePDFReport } from "./pdfGenerator";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -290,6 +291,34 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Report download error:", error);
       res.status(500).json({ error: "Failed to generate report" });
+    }
+  });
+
+  // Download report as PDF
+  app.get("/api/report/:id/download/pdf", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const session = await storage.getSession(id);
+
+      if (!session || !session.medicalReport || !session.healthSummary) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+
+      const report = generateStructuredReport(
+        session.medicalReport,
+        session.healthSummary,
+        session.recommendations || [],
+        session.existingPolicy
+      );
+
+      const pdfBuffer = generatePDFReport(report);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="medical-report-${id}.pdf"`);
+      res.setHeader("Content-Length", pdfBuffer.length);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("PDF download error:", error);
+      res.status(500).json({ error: "Failed to generate PDF report" });
     }
   });
 

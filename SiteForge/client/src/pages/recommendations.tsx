@@ -18,6 +18,41 @@ import { apiRequest } from "@/lib/queryClient";
 import type { ReportSession, NetAnnualCost } from "@shared/schema";
 
 export function RecommendationsPage() {
+    // Helper: Render extracted medical details
+    function MedicalDetailsCard() {
+      if (!report?.medicalReport) return null;
+      const { age, gender, diagnoses, tests, medications, smokingStatus } = report.medicalReport;
+      return (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Patient Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex flex-wrap gap-4 text-sm">
+              <span><b>Age:</b> {age}</span>
+              <span><b>Gender:</b> {gender}</span>
+              <span><b>Smoking:</b> {smokingStatus}</span>
+            </div>
+            {diagnoses && diagnoses.length > 0 && (
+              <div><b>Diagnoses:</b> {diagnoses.join(", ")}</div>
+            )}
+            {medications && medications.length > 0 && (
+              <div><b>Medications:</b> {medications.join(", ")}</div>
+            )}
+            {tests && tests.length > 0 && (
+              <div>
+                <b>Test Results:</b>
+                <ul className="list-disc ml-6">
+                  {tests.slice(0, 5).map((t, i) => (
+                    <li key={i}>{t.name}: {t.value} {t.unit} (Range: {t.range}) [{t.status}]</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      );
+    }
   const [, params] = useRoute("/recommendations/:id");
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -249,6 +284,9 @@ export function RecommendationsPage() {
       <main className="flex-1 py-8 md:py-12">
         <div className="max-w-6xl mx-auto px-4 md:px-6">
           <ProgressStepper currentStep={4} className="mb-8" />
+
+          {/* Show extracted medical details at the top */}
+          <MedicalDetailsCard />
 
           <div className="space-y-8">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
