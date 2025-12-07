@@ -1,7 +1,9 @@
 /**
  * PDF and Document Validation for Medical Reports
- * Uses AI-powered extraction instead of external PDF libraries
+ * Uses PDF.js for proper text extraction
  */
+
+import * as pdfjsLib from "pdfjs-dist";
 
 interface ParseResult {
   text: string;
@@ -83,57 +85,89 @@ export async function parsePDF(pdfBuffer: Buffer): Promise<ParseResult> {
       };
     }
 
-    // Try to extract text from PDF streams
+    // Set up PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+    // Load PDF document from buffer
+    const pdf = await pdfjsLib.getDocument({ data: pdfBuffer }).promise;
+    const pageCount = pdf.numPages;
+
     let extractedText = "";
-    try {
-      // Look for text in parentheses within PDF streams (common text format)
+    let textCount = 0;
+
+    // Extract text from all pages
+    for (let i = 1; i <= Math.min(pageCount, 5); i++) {
+      // Limit to first 5 pages for performance
+      try {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(" ");
+
+        extractedText += pageText + " ";
+        textCount += pageText.length;
+
+        if (textCount > 5000) {
+          // Stop if we have enough text
+          break;
+        }
+      } catch (pageError) {
+        console.warn(`Failed to extract text from page ${i}`);
+        continue;
+      }
+    }
+
+    // If no text extracted, try basic stream extraction as fallback
+    if (!extractedText.trim()) {
       const pdfString = pdfBuffer.toString("latin1");
-      
-      // Extract text between parentheses in PDF streams
       const textMatches = pdfString.match(/\(([^)]+)\)/g);
       if (textMatches) {
         extractedText = textMatches
-          .map(match => match.slice(1, -1)) // Remove parentheses
+          .map(match => match.slice(1, -1))
           .join(" ")
-          .substring(0, 5000); // Limit to first 5000 chars
-        console.log(`📄 PDF text extraction: Found ${textMatches.length} text segments, total length: ${extractedText.length} chars`);
-        console.log(`📄 Sample extracted text: ${extractedText.substring(0, 200)}`);
+          .substring(0, 5000);
       }
-      
-      // Also try to extract text after "BT" (begin text) markers
-      const btMatches = pdfString.match(/BT[\s\S]*?ET/g);
-      if (btMatches && btMatches.length > 0) {
-        const btText = btMatches
-          .map(match => {
-            // Extract content from Tj and Td operators
-            const content = match.match(/\(([^)]+)\)/g);
-            return content ? content.map(m => m.slice(1, -1)).join(" ") : "";
-          })
-          .join(" ");
-        if (btText.length > extractedText.length) {
-          extractedText = btText.substring(0, 5000);
-        }
-      }
-    } catch (e) {
-      // If text extraction fails, we'll still return the PDF as valid
-      // The AI or fallback analyzer can attempt processing
-      console.error(`📄 PDF text extraction error: ${e instanceof Error ? e.message : "Unknown error"}`);
     }
 
+    console.log(
+      `📄 PDF parsed: ${pageCount} pages, extracted ${extractedText.length} characters`
+    );
+
     return {
-      text: extractedText,
-      pageCount: 1, // We estimate 1 page
-      isMedicalDocument: true, // Valid PDF is considered potentially medical
-      confidence: 50, // Medium confidence until content is analyzed
+      text: extractedText.trim(),
+      pageCount,
+      isMedicalDocument: true, // Valid PDF, let content analysis determine if medical
+      confidence: 70,
     };
   } catch (error) {
-    return {
-      text: "",
-      pageCount: 0,
-      isMedicalDocument: false,
-      confidence: 0,
-      error: `Failed to validate PDF: ${error instanceof Error ? error.message : "Unknown error"}`,
-    };
+    console.error("PDF parsing error:", error);
+    // Fall back to basic stream extraction if PDF.js fails
+    try {
+      const pdfString = pdfBuffer.toString("latin1");
+      const textMatches = pdfString.match(/\(([^)]+)\)/g);
+      let extractedText = "";
+      if (textMatches) {
+        extractedText = textMatches
+          .map(match => match.slice(1, -1))
+          .join(" ")
+          .substring(0, 5000);
+      }
+      return {
+        text: extractedText.trim(),
+        pageCount: 1,
+        isMedicalDocument: true,
+        confidence: 50,
+      };
+    } catch (fallbackError) {
+      return {
+        text: "",
+        pageCount: 0,
+        isMedicalDocument: false,
+        confidence: 0,
+        error: `Failed to parse PDF: ${error instanceof Error ? error.message : "Unknown error"}`,
+      };
+    }
   }
 }
 
