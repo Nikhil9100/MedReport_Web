@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle, AlertTriangle, Activity, Info } from "lucide-react";
+import { AlertCircle, CheckCircle, AlertTriangle, Pill, User, BarChart3 } from "lucide-react";
 import type { MedicalReport, MedicalTest } from "@shared/schema";
 
 interface ExtractedReportDisplayProps {
@@ -9,19 +9,6 @@ interface ExtractedReportDisplayProps {
 }
 
 export function ExtractedReportDisplay({ report, className }: ExtractedReportDisplayProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "high":
-        return "bg-red-100 text-red-800 border-l-4 border-red-500";
-      case "borderline":
-        return "bg-amber-50 text-amber-900 border-l-4 border-amber-400";
-      case "normal":
-        return "bg-emerald-50 text-emerald-900 border-l-4 border-emerald-500";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "high":
@@ -48,209 +35,208 @@ export function ExtractedReportDisplay({ report, className }: ExtractedReportDis
     }
   };
 
-  const abnormalTests = report.tests.filter(t => t.status === "high" || t.status === "borderline");
+  const getRowColor = (status: string) => {
+    switch (status) {
+      case "high":
+        return "bg-red-50";
+      case "borderline":
+        return "bg-amber-50";
+      case "normal":
+        return "bg-emerald-50";
+      default:
+        return "bg-white";
+    }
+  };
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Abnormal/Borderline Tests Summary */}
-      {abnormalTests.length > 0 && (
-        <Card className="border-amber-200 bg-gradient-to-r from-amber-50 to-red-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-bold text-gray-900">
-              ⚠️ Abnormal & Borderline Results
+      {/* Patient Demographics Table */}
+      <Card className="border-2 border-blue-300">
+        <CardHeader className="bg-blue-100 pb-3">
+          <CardTitle className="text-base font-bold flex items-center gap-2 text-blue-900">
+            <User className="h-5 w-5" />
+            Patient Demographics
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <table className="w-full text-sm">
+            <tbody>
+              <tr className="border-b border-blue-200 hover:bg-blue-50">
+                <td className="py-4 px-4 font-semibold text-gray-700 bg-blue-100 w-1/3">Age</td>
+                <td className="py-4 px-4 text-gray-900 font-bold text-lg">{report.age} years</td>
+              </tr>
+              <tr className="border-b border-blue-200 hover:bg-blue-50">
+                <td className="py-4 px-4 font-semibold text-gray-700 bg-blue-100 w-1/3">Gender</td>
+                <td className="py-4 px-4 text-gray-900 font-bold text-lg">{report.gender}</td>
+              </tr>
+              <tr className="hover:bg-blue-50">
+                <td className="py-4 px-4 font-semibold text-gray-700 bg-blue-100 w-1/3">Smoking Status</td>
+                <td className="py-4 px-4 text-gray-900 font-bold text-lg">{report.smokingStatus || "Not specified"}</td>
+              </tr>
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      {/* Diagnoses Table */}
+      {report.diagnoses.length > 0 && (
+        <Card className="border-2 border-red-300">
+          <CardHeader className="bg-red-100 pb-3">
+            <CardTitle className="text-base font-bold text-red-900">
+              🔴 Diagnosed Conditions ({report.diagnoses.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {abnormalTests.map((test: MedicalTest, idx: number) => (
-              <div
-                key={idx}
-                className={`p-4 rounded-lg ${getStatusColor(test.status)} transition-all`}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">{test.name}</h4>
-                    <p className="text-sm text-gray-700 mt-1">
-                      {test.name} of {test.value} {test.unit} exceeds normal range of {test.range}
-                    </p>
-                  </div>
-                  <div className="text-right ml-4">
-                    <span className="text-lg font-bold text-gray-900">+15</span>
-                    <p className="text-xs text-gray-600">risk score</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <CardContent className="p-0">
+            <table className="w-full text-sm">
+              <tbody>
+                {report.diagnoses.map((diagnosis, idx) => (
+                  <tr key={idx} className={`border-b border-red-200 ${idx % 2 === 0 ? "bg-red-50" : "bg-white"} hover:bg-red-100`}>
+                    <td className="py-3 px-4 text-center w-12">
+                      <span className="inline-block bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold">{idx + 1}</span>
+                    </td>
+                    <td className="py-3 px-4 text-gray-900 font-medium">{diagnosis}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </CardContent>
         </Card>
       )}
 
-      {/* Patient Information */}
-      <Card className="border-blue-200">
+      {/* Medical Tests Table - Professional Format */}
+      {report.tests.length > 0 && (
+        <Card className="border-2 border-gray-400">
+          <CardHeader className="bg-gray-700 pb-3">
+            <CardTitle className="text-base font-bold flex items-center gap-2 text-white">
+              <BarChart3 className="h-5 w-5" />
+              Medical Test Results ({report.tests.length} tests)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-900 text-white">
+                  <th className="py-3 px-4 text-left font-semibold">#</th>
+                  <th className="py-3 px-4 text-left font-semibold">Test Name</th>
+                  <th className="py-3 px-4 text-center font-semibold">Value</th>
+                  <th className="py-3 px-4 text-center font-semibold">Unit</th>
+                  <th className="py-3 px-4 text-center font-semibold">Reference Range</th>
+                  <th className="py-3 px-4 text-center font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.tests.map((test: MedicalTest, idx: number) => (
+                  <tr 
+                    key={idx} 
+                    className={`border-b border-gray-300 ${getRowColor(test.status)} hover:opacity-80 transition`}
+                  >
+                    <td className="py-3 px-4 font-bold text-gray-800">{idx + 1}</td>
+                    <td className="py-3 px-4 font-medium text-gray-900">{test.name}</td>
+                    <td className="py-3 px-4 text-center font-bold text-gray-900">{test.value}</td>
+                    <td className="py-3 px-4 text-center text-gray-700">{test.unit}</td>
+                    <td className="py-3 px-4 text-center text-gray-700">{test.range}</td>
+                    <td className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {getStatusIcon(test.status)}
+                        <Badge className={`capitalize text-xs font-semibold ${getStatusBadgeColor(test.status)}`}>
+                          {test.status}
+                        </Badge>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Test Summary Stats */}
+      {report.tests.length > 0 && (
+        <Card className="border-2 border-purple-300 bg-purple-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-bold">📊 Test Results Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-emerald-100 p-4 rounded-lg border-2 border-emerald-300 text-center">
+                <div className="text-3xl font-bold text-emerald-700">
+                  {report.tests.filter(t => t.status === "normal").length}
+                </div>
+                <div className="text-sm font-semibold text-emerald-600 mt-1">Normal Tests</div>
+              </div>
+              <div className="bg-amber-100 p-4 rounded-lg border-2 border-amber-300 text-center">
+                <div className="text-3xl font-bold text-amber-700">
+                  {report.tests.filter(t => t.status === "borderline").length}
+                </div>
+                <div className="text-sm font-semibold text-amber-600 mt-1">Borderline Tests</div>
+              </div>
+              <div className="bg-red-100 p-4 rounded-lg border-2 border-red-300 text-center">
+                <div className="text-3xl font-bold text-red-700">
+                  {report.tests.filter(t => t.status === "high").length}
+                </div>
+                <div className="text-sm font-semibold text-red-600 mt-1">Abnormal Tests</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Medications Table */}
+      {report.medications && report.medications.length > 0 && (
+        <Card className="border-2 border-green-300">
+          <CardHeader className="bg-green-100 pb-3">
+            <CardTitle className="text-base font-bold text-green-900 flex items-center gap-2">
+              <Pill className="h-5 w-5" />
+              Current Medications ({report.medications.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <table className="w-full text-sm">
+              <tbody>
+                {report.medications.map((medication, idx) => (
+                  <tr 
+                    key={idx} 
+                    className={`border-b border-green-200 ${idx % 2 === 0 ? "bg-green-50" : "bg-white"} hover:bg-green-100`}
+                  >
+                    <td className="py-3 px-4 text-center w-12 font-bold">
+                      <span className="inline-block bg-green-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs">{idx + 1}</span>
+                    </td>
+                    <td className="py-3 px-4 text-gray-900 font-medium">{medication}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Report Overview */}
+      <Card className="border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-blue-50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-bold flex items-center gap-2">
-            <Activity className="h-5 w-5 text-blue-600" />
-            Patient Information
-          </CardTitle>
+          <CardTitle className="text-base font-bold">📋 Report Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm font-medium text-gray-600 flex items-center gap-1">
-                📅 Age
-              </p>
-              <div className="mt-2 bg-gray-50 rounded-lg p-3 border border-gray-200">
-                <p className="text-2xl font-bold text-gray-900">{report.age}</p>
-              </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-white p-4 rounded-lg border-2 border-gray-300 text-center">
+              <div className="text-xs font-bold text-gray-600 uppercase">Total Tests</div>
+              <div className="text-3xl font-bold text-gray-900 mt-2">{report.tests.length}</div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">Gender</p>
-              <div className="mt-2 bg-gray-50 rounded-lg p-3 border border-gray-200">
-                <p className="text-lg font-semibold text-gray-900">{report.gender}</p>
-              </div>
+            <div className="bg-white p-4 rounded-lg border-2 border-gray-300 text-center">
+              <div className="text-xs font-bold text-gray-600 uppercase">Diagnoses</div>
+              <div className="text-3xl font-bold text-gray-900 mt-2">{report.diagnoses.length}</div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600 flex items-center gap-1">
-                🏥 Diagnoses
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {report.diagnoses.map((diagnosis, idx) => (
-                  <Badge key={idx} variant="secondary" className="text-xs">
-                    {diagnosis}
-                    <span className="ml-1 cursor-pointer hover:font-bold">×</span>
-                  </Badge>
-                ))}
-              </div>
+            <div className="bg-white p-4 rounded-lg border-2 border-gray-300 text-center">
+              <div className="text-xs font-bold text-gray-600 uppercase">Medications</div>
+              <div className="text-3xl font-bold text-gray-900 mt-2">{report.medications?.length || 0}</div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border-2 border-red-300 text-center">
+              <div className="text-xs font-bold text-red-600 uppercase">Critical Issues</div>
+              <div className="text-3xl font-bold text-red-700 mt-2">{report.tests.filter(t => t.status === "high").length}</div>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Medical Values Table */}
-      {report.tests.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
-              🧪 Medical Values{" "}
-              <span className="text-sm font-normal text-blue-600 cursor-pointer hover:underline">
-                (Click to edit)
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-gray-200 bg-white">
-                    <th className="text-left py-3 px-0 font-semibold text-gray-700">Test</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Value</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Reference</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                    <th className="text-right py-3 px-4 font-semibold text-gray-700">Edit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.tests.map((test: MedicalTest, idx: number) => (
-                    <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-0">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-1 h-8 rounded-l ${
-                              test.status === "high"
-                                ? "bg-red-500"
-                                : test.status === "borderline"
-                                  ? "bg-amber-400"
-                                  : "bg-emerald-500"
-                            }`}
-                          ></div>
-                          <div>
-                            <p className="font-medium text-gray-900">{test.name}</p>
-                            <p className="text-xs text-gray-500 hidden sm:block">
-                              {test.name}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-semibold text-gray-900">
-                          {test.value} <span className="text-gray-600 font-normal text-xs">{test.unit}</span>
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-gray-600 text-sm">{test.range}</td>
-                      <td className="py-3 px-4">
-                        <Badge className={`capitalize text-xs ${getStatusBadgeColor(test.status)}`}>
-                          {test.status}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <button className="text-gray-600 hover:text-gray-900 p-1">
-                          ✏️
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Test Status Summary */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-2">
-                    <AlertCircle className="w-6 h-6 text-red-600" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {report.tests.filter(t => t.status === "high").length}
-                  </p>
-                  <p className="text-xs text-gray-600">High/Abnormal</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-2">
-                    <AlertTriangle className="w-6 h-6 text-amber-600" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {report.tests.filter(t => t.status === "borderline").length}
-                  </p>
-                  <p className="text-xs text-gray-600">Borderline</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-2">
-                    <CheckCircle className="w-6 h-6 text-emerald-600" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {report.tests.filter(t => t.status === "normal").length}
-                  </p>
-                  <p className="text-xs text-gray-600">Normal</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Medications */}
-      {report.medications && report.medications.length > 0 && (
-        <Card className="border-green-200 bg-green-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-bold text-green-900">
-              💊 Current Medications
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {report.medications.map((medication, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-3 p-3 bg-white rounded-lg border-l-4 border-green-500"
-                >
-                  <span className="text-lg">💊</span>
-                  <p className="font-medium text-gray-900">{medication}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
