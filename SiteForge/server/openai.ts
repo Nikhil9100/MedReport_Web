@@ -48,11 +48,12 @@ export async function extractMedicalData(
 
   const client = getGeminiClient();
   
+  // Declare variables outside try block so they're accessible in catch block
+  let contentToAnalyze: string = "";
+  let pdfText: string = "";
+  
   try {
     // For PDFs, extract text content first
-    let contentToAnalyze: string = "";
-    let pdfText: string = "";
-    
     if (fileType === "pdf") {
       const buffer = base64ToBuffer(fileData);
       const parseResult = await parsePDF(buffer);
