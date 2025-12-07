@@ -73,8 +73,24 @@ npm run dev
 ```
 Frontend runs on port 5000.
 
-## Recent Changes
-- Initial MVP implementation with full user flow
-- OpenAI gpt-5 integration for medical extraction
-- Plan matching algorithm with savings calculator
-- Responsive design with dark mode support
+## Deployment
+- **Live URL**: https://medreport-web.onrender.com
+- **GitHub Repository**: https://github.com/Nikhil9100/MedReport_Web
+- **Hosting**: Render.com (Docker containerized)
+
+## Recent Improvements (Session 2)
+- ✅ Removed technical warning messages for better UX
+- ✅ Enhanced PDF text extraction with multi-encoding support
+- ✅ Replaced external image logos with color-coded initials
+- ✅ Fixed PDF download with working JSON/HTML/CSV exports
+- ✅ Added AI-powered future disease risk prediction (1-2 years & 5-10 years)
+- ✅ Implemented backend PDF generation with PDFKit
+- ✅ Display extracted medical details prominently on recommendations
+- ✅ Enhanced health summary with insurance coverage recommendations
+
+## Features
+- **Medical Data Extraction**: AI extracts name, age, gender, diagnoses, test values
+- **Disease Risk Prediction**: Predicts future health risks with preventive measures
+- **Insurance Recommendations**: Personalized plans based on health profile
+- **Professional Reports**: PDF/JSON/HTML/CSV download options
+- **Transparent Analysis**: Shows all extracted details for verification
