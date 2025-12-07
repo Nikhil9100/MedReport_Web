@@ -13,7 +13,7 @@ Go to Vercel Dashboard → Project → Settings → Environment Variables
 
 | Variable | Value | Required |
 |----------|-------|----------|
-| `OPENAI_API_KEY` | `sk-...` from https://platform.openai.com | YES |
+| `GOOGLE_API_KEY` | `AIza...` from https://aistudio.google.com/app/apikeys | YES |
 | `SESSION_SECRET` | Any random string or leave blank | NO |
 | `DATABASE_URL` | PostgreSQL URL (optional) | NO |
 
@@ -36,7 +36,7 @@ POST https://your-app.vercel.app/api/upload
 | Error | Fix |
 |-------|-----|
 | **NOT_FOUND on all routes** | Config points to wrong file. Check vercel.json has `"dist/index.cjs"` |
-| **OPENAI_API_KEY not found** | Add to Vercel env vars (doesn't work locally without it) |
+| **GOOGLE_API_KEY not found** | Add to deployment env vars - FREE tier available at https://aistudio.google.com |
 | **Timeout errors** | Increase `maxDuration` in vercel.json (currently 30s) |
 | **Build fails** | Run `npm run build` locally first, fix errors, push again |
 

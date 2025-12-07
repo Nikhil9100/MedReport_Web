@@ -25,7 +25,7 @@ Railway auto-detects `package.json`, so it should work automatically:
 1. Go to Project Settings → Variables
 2. Add these variables:
    ```
-   OPENAI_API_KEY = sk-... (from https://platform.openai.com/api-keys)
+   GOOGLE_API_KEY = AIza... (get FREE from https://aistudio.google.com/app/apikeys)
    SESSION_SECRET = (any random string)
    NODE_ENV = production
    ```

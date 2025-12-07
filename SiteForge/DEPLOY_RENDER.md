@@ -32,7 +32,7 @@ Start Command:       npm start
 In "Environment" section, add:
 
 ```
-OPENAI_API_KEY = sk-... (from platform.openai.com)
+GOOGLE_API_KEY = AIza... (get FREE from https://aistudio.google.com/app/apikeys)
 SESSION_SECRET = (random string)
 NODE_ENV = production
 ```
@@ -93,7 +93,7 @@ curl https://your-medrep-app.onrender.com/
 **App keeps crashing?**
 - Check "Logs" tab in Render dashboard
 - Verify all environment variables are set
-- Check OPENAI_API_KEY is valid
+- Check GOOGLE_API_KEY is valid (get FREE key from https://aistudio.google.com)
 
 **Slow startup?**
 - Free tier apps spin down after 15 min

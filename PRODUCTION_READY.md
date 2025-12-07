@@ -15,7 +15,7 @@ Your MedReport project is now fully optimized and ready for production deploymen
 #### Environment Configuration
 - **New**: `.env.example` file created with all required variables
 - **Variables**: 
-  - `OPENAI_API_KEY` (required for AI features)
+  - `GOOGLE_API_KEY` (required for AI features - FREE tier available from Google AI Studio)
   - `SESSION_SECRET` (for session encryption)
   - `DATABASE_URL` (for optional persistent storage)
   - `NODE_ENV` and `PORT` (for deployment)
@@ -104,7 +104,7 @@ All changes have been **pushed to GitHub**.
 1. Go to Project Settings → Environment Variables
 2. Add these variables:
    ```
-   OPENAI_API_KEY = sk-... (get from https://platform.openai.com/api-keys)
+   GOOGLE_API_KEY = AIza... (get from https://aistudio.google.com/app/apikeys)
    SESSION_SECRET = (any random string, or leave blank for auto-generation)
    DATABASE_URL = (optional, for persistent storage)
    NODE_ENV = production (auto-set by Vercel)
@@ -209,7 +209,7 @@ Response sent to user
 
 - [ ] Verify latest commit `84aaab9` is on `main` branch
 - [ ] Go to Vercel dashboard for MedReport_Web
-- [ ] Add environment variables (especially `OPENAI_API_KEY`)
+- [ ] Add environment variables (especially `GOOGLE_API_KEY`)
 - [ ] Trigger deployment or wait for auto-deploy
 - [ ] Test health endpoint: `GET /api/health`
 - [ ] Test frontend: Visit root URL `/`
