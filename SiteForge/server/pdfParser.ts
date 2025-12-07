@@ -1,9 +1,8 @@
 /**
  * PDF and Document Validation for Medical Reports
- * Uses PDF.js for proper text extraction
+ * Simple regex-based extraction for Node.js backend
+ * Avoids browser-only dependencies
  */
-
-import * as pdfjsLib from "pdfjs-dist";
 
 interface ParseResult {
   text: string;
@@ -85,89 +84,102 @@ export async function parsePDF(pdfBuffer: Buffer): Promise<ParseResult> {
       };
     }
 
-    // Set up PDF.js worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    // Extract text using basic stream extraction
+    // This works for PDFs with embedded text (most medical reports)
+    let extractedText = extractPDFText(pdfBuffer);
 
-    // Load PDF document from buffer
-    const pdf = await pdfjsLib.getDocument({ data: pdfBuffer }).promise;
-    const pageCount = pdf.numPages;
-
-    let extractedText = "";
-    let textCount = 0;
-
-    // Extract text from all pages
-    for (let i = 1; i <= Math.min(pageCount, 5); i++) {
-      // Limit to first 5 pages for performance
-      try {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(" ");
-
-        extractedText += pageText + " ";
-        textCount += pageText.length;
-
-        if (textCount > 5000) {
-          // Stop if we have enough text
-          break;
-        }
-      } catch (pageError) {
-        console.warn(`Failed to extract text from page ${i}`);
-        continue;
-      }
-    }
-
-    // If no text extracted, try basic stream extraction as fallback
-    if (!extractedText.trim()) {
-      const pdfString = pdfBuffer.toString("latin1");
-      const textMatches = pdfString.match(/\(([^)]+)\)/g);
-      if (textMatches) {
-        extractedText = textMatches
-          .map(match => match.slice(1, -1))
-          .join(" ")
-          .substring(0, 5000);
-      }
-    }
+    // Estimate page count from PDF structure
+    const pageCount = estimatePageCount(pdfBuffer);
 
     console.log(
-      `📄 PDF parsed: ${pageCount} pages, extracted ${extractedText.length} characters`
+      `📄 PDF parsed: ~${pageCount} pages, extracted ${extractedText.length} characters`
     );
 
     return {
       text: extractedText.trim(),
       pageCount,
       isMedicalDocument: true, // Valid PDF, let content analysis determine if medical
-      confidence: 70,
+      confidence: 60,
     };
   } catch (error) {
     console.error("PDF parsing error:", error);
-    // Fall back to basic stream extraction if PDF.js fails
-    try {
-      const pdfString = pdfBuffer.toString("latin1");
-      const textMatches = pdfString.match(/\(([^)]+)\)/g);
-      let extractedText = "";
-      if (textMatches) {
-        extractedText = textMatches
-          .map(match => match.slice(1, -1))
-          .join(" ")
-          .substring(0, 5000);
-      }
-      return {
-        text: extractedText.trim(),
-        pageCount: 1,
-        isMedicalDocument: true,
-        confidence: 50,
-      };
-    } catch (fallbackError) {
-      return {
-        text: "",
-        pageCount: 0,
-        isMedicalDocument: false,
-        confidence: 0,
-        error: `Failed to parse PDF: ${error instanceof Error ? error.message : "Unknown error"}`,
-      };
+    return {
+      text: "",
+      pageCount: 0,
+      isMedicalDocument: false,
+      confidence: 0,
+      error: `Failed to parse PDF: ${error instanceof Error ? error.message : "Unknown error"}`,
+    };
+  }
+}
+
+/**
+ * Extract text from PDF streams using regex patterns
+ * Works for PDFs with embedded text content
+ */
+function extractPDFText(pdfBuffer: Buffer): string {
+  try {
+    const pdfString = pdfBuffer.toString("latin1");
+
+    // Pattern 1: Extract text between parentheses in text streams (Tj operator)
+    let extractedText = "";
+    const textMatches = pdfString.match(/\(([^)]+)\)/g);
+    if (textMatches && textMatches.length > 0) {
+      extractedText = textMatches
+        .map(match => {
+          try {
+            const text = match.slice(1, -1);
+            // Decode basic PDF escape sequences
+            return text
+              .replace(/\\n/g, " ")
+              .replace(/\\\//g, "/")
+              .replace(/\\\\/g, "\\");
+          } catch {
+            return "";
+          }
+        })
+        .join(" ")
+        .substring(0, 10000); // Limit to 10KB
     }
+
+    // Pattern 2: Extract from BT...ET (begin text ... end text) blocks
+    if (!extractedText.trim()) {
+      const btMatches = pdfString.match(/BT[\s\S]*?ET/g);
+      if (btMatches && btMatches.length > 0) {
+        const btText = btMatches
+          .map(match => {
+            const content = match.match(/\(([^)]+)\)/g);
+            return content ? content.map(m => m.slice(1, -1)).join(" ") : "";
+          })
+          .join(" ")
+          .substring(0, 10000);
+        if (btText.length > extractedText.length) {
+          extractedText = btText;
+        }
+      }
+    }
+
+    // Clean up extracted text
+    return extractedText
+      .replace(/\s+/g, " ")
+      .trim();
+  } catch (error) {
+    console.warn("PDF text extraction failed:", error);
+    return "";
+  }
+}
+
+/**
+ * Estimate PDF page count by counting /Page objects
+ */
+function estimatePageCount(pdfBuffer: Buffer): number {
+  try {
+    const pdfString = pdfBuffer.toString("latin1");
+    // Count page tree nodes
+    const pageMatches = pdfString.match(/\/Type\s*\/Page\b/g);
+    return Math.max(1, (pageMatches?.length || 1));
+  } catch {
+    return 1;
   }
 }
 
