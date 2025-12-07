@@ -5,6 +5,7 @@ import { extractMedicalData } from "./openai";
 import { matchPlans, calculateNetAnnualCost } from "./matching";
 import { uploadReportRequestSchema, matchRequestSchema, policySchema } from "@shared/schema";
 import { validateMedicalFile, formatFileSize } from "./fileValidator";
+import { generateStructuredReport, formatReportAsJSON, formatReportAsHTML, formatReportAsCSV } from "./reportGenerator";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -208,6 +209,87 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Get plans error:", error);
       res.status(500).json({ error: "Failed to fetch insurance plans" });
+    }
+  });
+
+  // Download report as JSON
+  app.get("/api/report/:id/download/json", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const session = await storage.getSession(id);
+
+      if (!session || !session.medicalReport || !session.healthSummary) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+
+      const report = generateStructuredReport(
+        session.medicalReport,
+        session.healthSummary,
+        session.recommendations || [],
+        session.existingPolicy
+      );
+
+      const jsonContent = formatReportAsJSON(report);
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Content-Disposition", `attachment; filename="medical-report-${id}.json"`);
+      res.send(jsonContent);
+    } catch (error) {
+      console.error("Report download error:", error);
+      res.status(500).json({ error: "Failed to generate report" });
+    }
+  });
+
+  // Download report as HTML
+  app.get("/api/report/:id/download/html", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const session = await storage.getSession(id);
+
+      if (!session || !session.medicalReport || !session.healthSummary) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+
+      const report = generateStructuredReport(
+        session.medicalReport,
+        session.healthSummary,
+        session.recommendations || [],
+        session.existingPolicy
+      );
+
+      const htmlContent = formatReportAsHTML(report);
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="medical-report-${id}.html"`);
+      res.send(htmlContent);
+    } catch (error) {
+      console.error("Report download error:", error);
+      res.status(500).json({ error: "Failed to generate report" });
+    }
+  });
+
+  // Download report as CSV
+  app.get("/api/report/:id/download/csv", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const session = await storage.getSession(id);
+
+      if (!session || !session.medicalReport || !session.healthSummary) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+
+      const report = generateStructuredReport(
+        session.medicalReport,
+        session.healthSummary,
+        session.recommendations || [],
+        session.existingPolicy
+      );
+
+      const csvContent = formatReportAsCSV(report);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="medical-report-${id}.csv"`);
+      res.send(csvContent);
+    } catch (error) {
+      console.error("Report download error:", error);
+      res.status(500).json({ error: "Failed to generate report" });
     }
   });
 
