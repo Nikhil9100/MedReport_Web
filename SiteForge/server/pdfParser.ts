@@ -135,17 +135,29 @@ export function base64ToBuffer(base64String: string): Buffer {
  * Check if extracted content is actually medical data
  */
 export function isMedicalContent(text: string): boolean {
+  if (!text || text.trim().length === 0) {
+    return false;
+  }
+
   const lowercaseText = text.toLowerCase();
-  const criticalKeywords = [
-    "patient", "diagnosis", "test", "blood", "medical",
-    "doctor", "physician", "clinical", "health", "report",
+  
+  // Less strict validation - check for common medical patterns
+  const medicalPatterns = [
+    /\b(patient|diagnosis|doctor|physician|clinical|medical|health|hospital)\b/i,
+    /\b(blood|test|lab|result|examination|report|treatment)\b/i,
+    /\b(date|age|gender|vital|pressure|glucose|temperature)\b/i,
+    /\b(disease|condition|symptom|medication|prescription|therapy)\b/i,
   ];
 
-  const matchedCritical = criticalKeywords.filter(keyword =>
-    lowercaseText.includes(keyword)
+  const matchedPatterns = medicalPatterns.filter(pattern =>
+    pattern.test(lowercaseText)
   ).length;
 
-  // Require at least 3 critical keywords
-  return matchedCritical >= 3;
+  // Require at least 2 patterns (much more lenient than before)
+  const isValid = matchedPatterns >= 2;
+  
+  console.log(`📄 Medical content validation: matched ${matchedPatterns}/4 patterns - ${isValid ? '✅ VALID' : '❌ INVALID'}`);
+  
+  return isValid;
 }
 
