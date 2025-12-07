@@ -78,15 +78,14 @@ Frontend runs on port 5000.
 - **GitHub Repository**: https://github.com/Nikhil9100/MedReport_Web
 - **Hosting**: Render.com (Docker containerized)
 
-## Recent Improvements (Session 2)
-- ✅ Removed technical warning messages for better UX
-- ✅ Enhanced PDF text extraction with multi-encoding support
-- ✅ Replaced external image logos with color-coded initials
-- ✅ Fixed PDF download with working JSON/HTML/CSV exports
-- ✅ Added AI-powered future disease risk prediction (1-2 years & 5-10 years)
-- ✅ Implemented backend PDF generation with PDFKit
-- ✅ Display extracted medical details prominently on recommendations
-- ✅ Enhanced health summary with insurance coverage recommendations
+## Recent Improvements (Session 3)
+- ✅ Fixed AI analysis by adding dotenv for GOOGLE_API_KEY loading
+- ✅ Removed "local analysis without AI" warning messages
+- ✅ Added comprehensive medical report display component
+- ✅ Integrated extracted report viewer on review page
+- ✅ Created AI setup guide for proper Gemini API configuration
+- ✅ Implemented proper fallback analyzer without API messages
+- ✅ Added environment variable configuration
 
 ## Features
 - **Medical Data Extraction**: AI extracts name, age, gender, diagnoses, test values
@@ -94,3 +93,23 @@ Frontend runs on port 5000.
 - **Insurance Recommendations**: Personalized plans based on health profile
 - **Professional Reports**: PDF/JSON/HTML/CSV download options
 - **Transparent Analysis**: Shows all extracted details for verification
+
+## Setting Up AI Analysis
+
+### Quick Setup (30 seconds)
+1. **Get API Key**: Visit [Google AI Studio](https://aistudio.google.com/apikey)
+2. **Local Setup**: Add to `SiteForge/.env`:
+   ```
+   GOOGLE_API_KEY=your_api_key_here
+   ```
+3. **Production (Render)**: Add to environment variables:
+   - Key: `GOOGLE_API_KEY`
+   - Value: Your Google API key
+
+### Full Documentation
+See [AI_SETUP_GUIDE.md](../AI_SETUP_GUIDE.md) for detailed instructions, troubleshooting, and advanced configuration.
+
+### API Details
+- **Service**: Google Gemini 2.0 Flash
+- **Cost**: FREE (2M tokens/month)
+- **Features**: Medical data extraction, disease risk prediction, insurance recommendations
