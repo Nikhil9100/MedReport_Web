@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { MedicalReport, HealthSummary, RiskScore, MedicalTest } from "@shared/schema";
 import { parsePDF, base64ToBuffer, isMedicalContent } from "./pdfParser";
 import { checkRateLimit, getQuotaWarning } from "./gemini-rate-limiter";
+import { getCachedReport, cacheReport, generateFileHash } from "./report-cache";
 
 // Using Google Gemini API for medical report analysis
 let genAI: GoogleGenerativeAI | null = null;
@@ -27,6 +28,15 @@ export async function extractMedicalData(
   fileType: "pdf" | "image",
   fileName: string
 ): Promise<ExtractionResult> {
+  // Check cache first - if we've already analyzed this file, use cached result
+  const cached = getCachedReport(fileData);
+  if (cached) {
+    return {
+      medicalReport: cached.medicalReport,
+      healthSummary: cached.healthSummary,
+    };
+  }
+
   // Check rate limit first
   try {
     await checkRateLimit();
@@ -171,6 +181,9 @@ ${contentToAnalyze}`;
 
     const healthSummary = await generateHealthSummary(medicalReport, extractedData.clinicalNotes);
 
+    // Cache the result for future use
+    cacheReport(fileData, fileName, medicalReport, healthSummary);
+
     return { medicalReport, healthSummary };
   } catch (error) {
     console.error("Medical data extraction error:", error);
@@ -180,9 +193,13 @@ ${contentToAnalyze}`;
     
     if (errorMessage.includes("Quota exceeded") || errorMessage.includes("quota")) {
       throw new Error(
-        "Google API free tier quota reached. This happens after many requests in a short period. " +
-        "Please wait a few hours before trying again, or consider upgrading to a paid Google Cloud plan. " +
-        "Quota resets daily. Current status: " + getQuotaWarning()
+        "Google API free tier quota reached for today. The free tier allows 60 requests per minute and has daily limits. " +
+        "Please try again tomorrow (quota resets daily at midnight UTC). " +
+        "Alternatively, you can:\n" +
+        "1. Upload the same file again (we cache results to save API calls)\n" +
+        "2. Use Google's paid plan (very affordable - usually under $1/month)\n" +
+        "3. Wait and try tomorrow\n\n" +
+        "Current status: " + getQuotaWarning()
       );
     }
     
