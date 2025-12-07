@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { MedicalReport, HealthSummary, RiskScore, MedicalTest } from "@shared/schema";
 import { parsePDF, base64ToBuffer, isMedicalContent } from "./pdfParser";
+import { checkRateLimit, getQuotaWarning } from "./gemini-rate-limiter";
 
 // Using Google Gemini API for medical report analysis
 let genAI: GoogleGenerativeAI | null = null;
@@ -26,6 +27,14 @@ export async function extractMedicalData(
   fileType: "pdf" | "image",
   fileName: string
 ): Promise<ExtractionResult> {
+  // Check rate limit first
+  try {
+    await checkRateLimit();
+  } catch (rateLimitError) {
+    console.warn(`Rate limit: ${rateLimitError}`);
+    throw rateLimitError;
+  }
+
   const client = getGeminiClient();
   
   try {
@@ -165,6 +174,25 @@ ${contentToAnalyze}`;
     return { medicalReport, healthSummary };
   } catch (error) {
     console.error("Medical data extraction error:", error);
+    
+    // Handle specific Google API errors
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    if (errorMessage.includes("Quota exceeded") || errorMessage.includes("quota")) {
+      throw new Error(
+        "Google API free tier quota reached. This happens after many requests in a short period. " +
+        "Please wait a few hours before trying again, or consider upgrading to a paid Google Cloud plan. " +
+        "Quota resets daily. Current status: " + getQuotaWarning()
+      );
+    }
+    
+    if (errorMessage.includes("API key not valid") || errorMessage.includes("Invalid API")) {
+      throw new Error(
+        "Invalid Google API key. Please verify your GOOGLE_API_KEY is correct. " +
+        "Get a new key at https://aistudio.google.com/app/apikeys"
+      );
+    }
+
     throw new Error(
       error instanceof Error 
         ? error.message 
@@ -174,6 +202,15 @@ ${contentToAnalyze}`;
 }
 
 async function generateHealthSummary(report: MedicalReport, clinicalNotes?: string): Promise<HealthSummary> {
+  // Check rate limit before making API call
+  try {
+    await checkRateLimit();
+  } catch (rateLimitError) {
+    console.warn(`Rate limit on health summary: ${rateLimitError}`);
+    // Fall back to local summary if rate limited
+    return generateFallbackSummary(report);
+  }
+
   const client = getGeminiClient();
   
   if (!client) {
