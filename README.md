@@ -26,7 +26,7 @@ Install dependencies: npm install / pip install -r requirements.txt.
 
 Configure .env for storage, OCR, and model keys.
 
-Start frontend and backend and open http://localhost:3000.
+
 
 Why this repo exists
 To simplify the insurance-shopping experience for people with pre-existing conditions by combining medical report parsing, transparent risk explanation, and direct-priced plan comparisons — while keeping user privacy and editability front-and-center.

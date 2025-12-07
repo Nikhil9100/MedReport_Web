@@ -138,6 +138,7 @@ export const uploadReportRequestSchema = z.object({
   fileData: z.string(), // base64
   fileType: z.enum(["pdf", "image"]),
   fileName: z.string(),
+  fileSize: z.number().optional(), // File size in bytes
 });
 
 export type UploadReportRequest = z.infer<typeof uploadReportRequestSchema>;

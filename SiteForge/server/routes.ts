@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { extractMedicalData } from "./openai";
 import { matchPlans, calculateNetAnnualCost } from "./matching";
 import { uploadReportRequestSchema, matchRequestSchema, policySchema } from "@shared/schema";
+import { validateMedicalFile, formatFileSize } from "./fileValidator";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -30,7 +31,30 @@ export async function registerRoutes(
         });
       }
 
-      const { fileData, fileType, fileName } = parsed.data;
+      const { fileData, fileType, fileName, fileSize } = parsed.data;
+
+      // Validate file
+      const validation = validateMedicalFile(
+        fileData,
+        fileType,
+        fileName,
+        fileSize || fileData.length
+      );
+
+      if (!validation.valid) {
+        return res.status(400).json({ 
+          error: "File validation failed",
+          message: validation.error,
+          details: {
+            fileName,
+            fileSize: fileSize ? formatFileSize(fileSize) : "unknown",
+            fileType,
+          }
+        });
+      }
+
+      // If there's a warning, include it in the response
+      const warnings = validation.warning ? [validation.warning] : [];
 
       const session = await storage.createSession();
 
@@ -45,7 +69,10 @@ export async function registerRoutes(
         healthSummary,
       });
 
-      res.json(updated);
+      res.json({
+        ...updated,
+        warnings: warnings.length > 0 ? warnings : undefined,
+      });
     } catch (error) {
       console.error("Upload error:", error);
       res.status(500).json({ 

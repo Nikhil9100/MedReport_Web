@@ -37,6 +37,7 @@ export function UploadPage() {
         fileData: base64,
         fileType,
         fileName: file.name,
+        fileSize: file.size, // Include file size for server-side validation
       });
       
       return await response.json();

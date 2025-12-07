@@ -15,12 +15,14 @@ interface UploadDropzoneProps {
   disabled?: boolean;
 }
 
+const MAX_FILE_SIZE_MB = 20;
+
 export function UploadDropzone({
   onFileSelect,
   accept = ".pdf,.jpg,.jpeg,.png",
-  maxSize = 10 * 1024 * 1024,
+  maxSize = MAX_FILE_SIZE_MB * 1024 * 1024,
   title = "Drop medical report here",
-  description = "PDF or image up to 10MB",
+  description = "PDF or image up to 20MB",
   className,
   disabled = false,
 }: UploadDropzoneProps) {
@@ -44,8 +46,17 @@ export function UploadDropzone({
       return false;
     }
 
+    // Validate file size (20MB limit)
     if (file.size > maxSize) {
-      setError(`File too large. Maximum size is ${maxSize / (1024 * 1024)}MB.`);
+      const maxSizeMB = maxSize / (1024 * 1024);
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      setError(`File too large (${fileSizeMB}MB). Maximum allowed size is ${maxSizeMB}MB.`);
+      return false;
+    }
+
+    // Check minimum file size (must not be empty)
+    if (file.size < 1024) {
+      setError("File is too small. Please upload a valid medical report.");
       return false;
     }
 
