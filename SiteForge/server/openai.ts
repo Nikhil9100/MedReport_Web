@@ -204,32 +204,33 @@ ${contentToAnalyze}`;
     return { medicalReport, healthSummary };
   } catch (error) {
     console.error("Medical data extraction error:", error);
-    
+
     // Handle specific Google API errors
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
-    if (errorMessage.includes("Quota exceeded") || errorMessage.includes("quota")) {
+
+    if (errorMessage.includes("Quota exceeded") || errorMessage.includes("quota") || errorMessage.includes("429") || errorMessage.includes("Too Many Requests")) {
       // Use fallback analysis instead of failing completely
       console.warn("⚠️ API quota exceeded - using local fallback analysis");
-      
+
       if (fileType === "pdf") {
-        const buffer = base64ToBuffer(fileData);
-        const parseResult = await parsePDF(buffer);
-        pdfText = parseResult.text;
+        if (!pdfText) {
+          const buffer = base64ToBuffer(fileData);
+          const parseResult = await parsePDF(buffer);
+          pdfText = parseResult.text;
+        }
       } else {
         pdfText = fileData;
       }
 
       const { medicalReport, healthSummary } = performLocalAnalysis(pdfText);
-      
-      // Don't show technical details to users - analysis appears normal
 
       // Cache the fallback result too
       cacheReport(fileData, fileName, medicalReport, healthSummary);
-      
+
+      console.log("Fallback analysis completed successfully");
       return { medicalReport, healthSummary };
     }
-    
+
     if (errorMessage.includes("API key not valid") || errorMessage.includes("Invalid API")) {
       throw new Error(
         "Invalid Google API key. Please verify your GOOGLE_API_KEY is correct. " +
@@ -354,8 +355,19 @@ RISK CALCULATION GUIDELINES:
 
 Generate medically accurate, actionable insights based ONLY on the actual data provided.`;
 
-    const response = await model.generateContent(prompt);
-    const result = JSON.parse(response.response.text());
+    let response;
+    let result;
+    try {
+      response = await model.generateContent(prompt);
+      result = JSON.parse(response.response.text());
+    } catch (apiError) {
+      const errorMsg = apiError instanceof Error ? apiError.message : String(apiError);
+      if (errorMsg.includes("quota") || errorMsg.includes("429") || errorMsg.includes("Too Many Requests") || errorMsg.includes("Quota exceeded")) {
+        console.warn("⚠️ API quota exceeded in health summary generation - using fallback");
+        return generateFallbackSummary(report);
+      }
+      throw apiError;
+    }
     
     return {
       summary: result.summary || "Your health profile shows some areas that may require attention.",
@@ -382,6 +394,11 @@ Generate medically accurate, actionable insights based ONLY on the actual data p
     };
   } catch (error) {
     console.error("Health summary generation error:", error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        if (errorMsg.includes("quota") || errorMsg.includes("429") || errorMsg.includes("Too Many Requests") || errorMsg.includes("Quota exceeded")) {
+          console.warn("⚠️ Caught quota error in health summary - using fallback");
+          return generateFallbackSummary(report);
+        }
     return generateFallbackSummary(report);
   }
 }
