@@ -19,6 +19,30 @@ interface PlanRecommendationCardProps {
   className?: string;
 }
 
+// Insurance company logo mapping
+const insuranceCompanyLogos: Record<string, string> = {
+  "HDFC Insurance": "https://upload.wikimedia.org/wikipedia/en/thumb/5/52/HDFC_ERGO_logo.svg/1200px-HDFC_ERGO_logo.svg.png",
+  "HDFC": "https://upload.wikimedia.org/wikipedia/en/thumb/5/52/HDFC_ERGO_logo.svg/1200px-HDFC_ERGO_logo.svg.png",
+  "ICICI Lombard": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/ICICI_Lombard_General_Insurance_Company_Limited_Logo.svg/1200px-ICICI_Lombard_General_Insurance_Company_Limited_Logo.svg.png",
+  "ICICI": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/ICICI_Lombard_General_Insurance_Company_Limited_Logo.svg/1200px-ICICI_Lombard_General_Insurance_Company_Limited_Logo.svg.png",
+  "Apollo Munich": "https://upload.wikimedia.org/wikipedia/en/thumb/0/05/Apollo_Munich_Health_Insurance_logo.svg/1200px-Apollo_Munich_Health_Insurance_logo.svg.png",
+  "Apollo": "https://upload.wikimedia.org/wikipedia/en/thumb/0/05/Apollo_Munich_Health_Insurance_logo.svg/1200px-Apollo_Munich_Health_Insurance_logo.svg.png",
+  "Max Bupa": "https://upload.wikimedia.org/wikipedia/en/thumb/4/47/Max_Bupa_Logo.svg/1200px-Max_Bupa_Logo.svg.png",
+  "Aditya Birla Health": "https://upload.wikimedia.org/wikipedia/en/thumb/1/1f/Aditya_Birla_Health_Insurance_Logo.svg/1200px-Aditya_Birla_Health_Insurance_Logo.svg.png",
+  "Aditya Birla": "https://upload.wikimedia.org/wikipedia/en/thumb/1/1f/Aditya_Birla_Health_Insurance_Logo.svg/1200px-Aditya_Birla_Health_Insurance_Logo.svg.png",
+  "Star Health": "https://upload.wikimedia.org/wikipedia/en/thumb/9/9d/Star_Health_and_Allied_Insurance_Company_Limited_Logo.svg/1200px-Star_Health_and_Allied_Insurance_Company_Limited_Logo.svg.png",
+  "Star": "https://upload.wikimedia.org/wikipedia/en/thumb/9/9d/Star_Health_and_Allied_Insurance_Company_Limited_Logo.svg/1200px-Star_Health_and_Allied_Insurance_Company_Limited_Logo.svg.png",
+};
+
+function getCompanyLogo(provider: string): string | null {
+  for (const [key, logo] of Object.entries(insuranceCompanyLogos)) {
+    if (provider.includes(key) || key.includes(provider)) {
+      return logo;
+    }
+  }
+  return null;
+}
+
 export function PlanRecommendationCard({ 
   match, 
   rank,
@@ -42,6 +66,7 @@ export function PlanRecommendationCard({
   };
 
   const rankBadge = getRankBadge();
+  const companyLogo = getCompanyLogo(plan.provider);
 
   return (
     <Card className={cn("overflow-hidden", className)} data-testid={`card-plan-${plan.id}`}>
@@ -49,7 +74,20 @@ export function PlanRecommendationCard({
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-muted text-muted-foreground shrink-0">
-              <Building2 className="h-6 w-6" />
+              {companyLogo ? (
+                <img 
+                  src={companyLogo} 
+                  alt={plan.provider}
+                  className="h-10 w-10 object-contain"
+                  onError={(e) => {
+                    // Fallback to Building2 icon if logo fails to load
+                    const img = e.target as HTMLImageElement;
+                    img.style.display = "none";
+                  }}
+                />
+              ) : (
+                <Building2 className="h-6 w-6" />
+              )}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -61,7 +99,7 @@ export function PlanRecommendationCard({
                   {rankBadge.label}
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground mt-0.5">{plan.provider}</p>
+              <p className="text-sm text-muted-foreground mt-0.5 font-medium">{plan.provider}</p>
             </div>
           </div>
 

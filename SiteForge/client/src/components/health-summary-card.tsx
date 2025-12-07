@@ -87,6 +87,66 @@ export function HealthSummaryCard({ summary, className }: HealthSummaryCardProps
           </div>
         )}
 
+        {summary.currentHealthIssues && summary.currentHealthIssues.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Current Health Issues
+            </h4>
+            <ul className="space-y-2">
+              {summary.currentHealthIssues.map((issue, index) => (
+                <li 
+                  key={index}
+                  className="flex items-start gap-2 text-sm"
+                  data-testid={`text-health-issue-${index}`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
+                  <span>{issue}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {summary.futureHealthRisks && summary.futureHealthRisks.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Future Health Risks
+            </h4>
+            <ul className="space-y-2">
+              {summary.futureHealthRisks.map((risk, index) => (
+                <li 
+                  key={index}
+                  className="flex items-start gap-2 text-sm"
+                  data-testid={`text-future-risk-${index}`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0" />
+                  <span>{risk}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {summary.recommendations && summary.recommendations.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Recommendations
+            </h4>
+            <ul className="space-y-2">
+              {summary.recommendations.map((rec, index) => (
+                <li 
+                  key={index}
+                  className="flex items-start gap-2 text-sm"
+                  data-testid={`text-recommendation-${index}`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
+                  <span>{rec}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {riskScore.factors.length > 0 && (
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">

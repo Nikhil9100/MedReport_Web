@@ -90,13 +90,109 @@ export function RecommendationsPage() {
 
       toast({
         title: "Report downloaded",
-        description: "Your insurance recommendation report has been saved.",
+        description: "Your insurance recommendation report has been saved as PDF.",
       });
     } catch (error) {
       console.error("PDF generation error:", error);
       toast({
         title: "Download failed",
         description: "There was an error generating your PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadJSON = async () => {
+    setIsDownloading(true);
+    try {
+      const response = await fetch(`/api/report/${reportId}/download/json`);
+      if (!response.ok) throw new Error("Failed to download JSON");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `MedReport_${reportId}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "JSON downloaded",
+        description: "Your medical report has been downloaded as JSON.",
+      });
+    } catch (error) {
+      console.error("JSON download error:", error);
+      toast({
+        title: "Download failed",
+        description: "There was an error downloading the JSON file.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadHTML = async () => {
+    setIsDownloading(true);
+    try {
+      const response = await fetch(`/api/report/${reportId}/download/html`);
+      if (!response.ok) throw new Error("Failed to download HTML");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `MedReport_${reportId}.html`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "HTML downloaded",
+        description: "Your medical report has been downloaded as HTML.",
+      });
+    } catch (error) {
+      console.error("HTML download error:", error);
+      toast({
+        title: "Download failed",
+        description: "There was an error downloading the HTML file.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadCSV = async () => {
+    setIsDownloading(true);
+    try {
+      const response = await fetch(`/api/report/${reportId}/download/csv`);
+      if (!response.ok) throw new Error("Failed to download CSV");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `MedReport_${reportId}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "CSV downloaded",
+        description: "Your medical report has been downloaded as CSV.",
+      });
+    } catch (error) {
+      console.error("CSV download error:", error);
+      toast({
+        title: "Download failed",
+        description: "There was an error downloading the CSV file.",
         variant: "destructive",
       });
     } finally {
@@ -247,6 +343,45 @@ export function RecommendationsPage() {
                   isDownloading={isDownloading}
                 />
               </div>
+            )}
+
+            {report.medicalReport && report.healthSummary && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Download Report in Different Formats</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <Button 
+                      onClick={handleDownloadJSON}
+                      disabled={isDownloading}
+                      variant="outline"
+                      className="gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      JSON File
+                    </Button>
+                    <Button 
+                      onClick={handleDownloadHTML}
+                      disabled={isDownloading}
+                      variant="outline"
+                      className="gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      HTML File
+                    </Button>
+                    <Button 
+                      onClick={handleDownloadCSV}
+                      disabled={isDownloading}
+                      variant="outline"
+                      className="gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      CSV File
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">

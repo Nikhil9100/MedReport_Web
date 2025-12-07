@@ -61,57 +61,13 @@ export async function extractMedicalData(
       }
     }
 
-    // If no OpenAI client, provide helpful instructions
+    // Require OpenAI API key for medical report processing
     if (!client) {
-      console.warn("⚠️  OPENAI_API_KEY not configured");
-      console.warn("Medical document processing requires OpenAI API key");
-      console.warn("To enable: Add OPENAI_API_KEY to your environment variables");
-      
-      // Create a basic extraction from filename and estimated data
-      // This allows testing but clearly indicates limitations
-      const medicalReport: MedicalReport = {
-        id: `report-${Date.now()}`,
-        age: 45,
-        gender: "Other",
-        diagnoses: ["Medical report uploaded"],
-        tests: [
-          {
-            name: "Processing Status",
-            value: 1,
-            unit: "pending",
-            range: "awaiting-api-key",
-            status: "normal",
-          }
-        ],
-        medications: [],
-        smokingStatus: "Unknown",
-      };
-
-      const healthSummary: HealthSummary = {
-        summary: "⚠️ LIMITED PROCESSING: OpenAI API key is not configured. " +
-          "To enable full medical report analysis, please add your OPENAI_API_KEY to the environment variables. " +
-          "Current mode: File accepted but AI analysis unavailable.",
-        keyFindings: [
-          "File uploaded successfully",
-          "AI analysis unavailable - OpenAI API key missing",
-          "Add OPENAI_API_KEY environment variable to enable full processing"
-        ],
-        riskScore: {
-          shortTerm: 0,
-          longTerm: 0,
-          shortTermLabel: "Unknown",
-          longTermLabel: "Unknown",
-          factors: [
-            {
-              name: "API Configuration",
-              contribution: 0,
-              explanation: "Please configure OPENAI_API_KEY for medical analysis"
-            }
-          ]
-        }
-      };
-
-      return { medicalReport, healthSummary };
+      throw new Error(
+        "Medical report processing requires OpenAI API key configuration. " +
+        "Please set the OPENAI_API_KEY environment variable to enable document analysis. " +
+        "Visit https://platform.openai.com/api-keys to create an API key."
+      );
     }
 
     // Use AI to extract medical data from the document
@@ -263,7 +219,7 @@ async function generateHealthSummary(report: MedicalReport, clinicalNotes?: stri
         },
         {
           role: "user",
-          content: `Analyze this patient's medical report and generate a comprehensive health summary.
+          content: `Analyze this patient's medical report and generate a comprehensive health summary with detailed problem analysis and future health risks.
 
 Patient Profile:
 - Age: ${report.age}
@@ -277,27 +233,47 @@ ${report.tests.map(t => `- ${t.name}: ${t.value} ${t.unit} (Range: ${t.range}) [
 
 ${clinicalNotes ? `Clinical Notes: ${clinicalNotes}` : ""}
 
-Generate a professional health summary in this JSON format:
+Generate a DETAILED professional health summary in this JSON format:
 {
-  "summary": "2-3 sentence professional summary of the patient's health status based on actual findings",
-  "keyFindings": ["finding 1", "finding 2", "finding 3"],
+  "summary": "2-3 sentence professional summary of the patient's current health status based on actual findings. Include severity assessment.",
+  "keyFindings": [
+    "List of 5-7 key findings from test results, diagnoses, and risk factors. Be specific with values."
+  ],
+  "currentHealthIssues": [
+    "Detailed breakdown of each diagnosed condition and its severity",
+    "Description of abnormal test values and their medical implications",
+    "Lifestyle factors affecting health (smoking, medications, age-related risks)"
+  ],
+  "futureHealthRisks": [
+    "Short-term risks (1-2 years): What conditions or complications could develop",
+    "Long-term risks (5-10 years): Progressive disease complications and age-related risks",
+    "Preventive measures needed to mitigate these risks"
+  ],
+  "recommendations": [
+    "Medical management recommendations",
+    "Lifestyle changes to reduce risk",
+    "Monitoring and follow-up frequency recommendations",
+    "Warning signs to watch for that require immediate medical attention"
+  ],
   "riskScore": {
     "shortTerm": 0-100 number (risk in next 1-2 years),
     "longTerm": 0-100 number (risk in next 5-10 years),
     "shortTermLabel": "Low" | "Moderate" | "High",
     "longTermLabel": "Low" | "Moderate" | "High",
     "factors": [
-      { "name": "factor name", "contribution": 0-100, "explanation": "how this factor affects risk" }
+      { "name": "factor name", "contribution": 1-100, "explanation": "specific impact on health and risk score" }
     ]
   }
 }
 
-Risk Assessment Guide:
-- Consider all abnormal test values (especially borderline and high)
-- Age is a significant risk factor
-- Multiple diagnoses increase risk
-- Smoking status significantly impacts risk
-- Medication use may indicate chronic conditions`
+Risk Assessment Guidelines:
+- Weight all abnormal test values (high values carry more weight than borderline)
+- Age is a significant cumulative risk factor (increases with each decade above 40)
+- Multiple diagnoses compound risk significantly
+- Active smoking status increases all risks by 15-25 points
+- Medication use indicates chronic conditions and ongoing health issues
+- Consider interactions between conditions (e.g., diabetes + hypertension)
+- Provide specific, actionable insights, not generic statements`
         }
       ],
       response_format: { type: "json_object" },
@@ -309,6 +285,9 @@ Risk Assessment Guide:
     return {
       summary: result.summary || "Your health profile shows some areas that may require attention.",
       keyFindings: result.keyFindings || [],
+      currentHealthIssues: result.currentHealthIssues || [],
+      futureHealthRisks: result.futureHealthRisks || [],
+      recommendations: result.recommendations || [],
       riskScore: {
         shortTerm: result.riskScore?.shortTerm || 35,
         longTerm: result.riskScore?.longTerm || 45,

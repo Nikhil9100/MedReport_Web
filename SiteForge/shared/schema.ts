@@ -44,6 +44,9 @@ export type RiskScore = z.infer<typeof riskScoreSchema>;
 export const healthSummarySchema = z.object({
   summary: z.string(),
   keyFindings: z.array(z.string()),
+  currentHealthIssues: z.array(z.string()).optional(),
+  futureHealthRisks: z.array(z.string()).optional(),
+  recommendations: z.array(z.string()).optional(),
   riskScore: riskScoreSchema,
 });
 
