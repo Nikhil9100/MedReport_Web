@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { 
-  ChevronDown, ChevronUp, Shield, DollarSign, Clock, Building2, 
+  ChevronDown, ChevronUp, Shield, Clock, Building2, 
   Check, AlertTriangle, ExternalLink, Phone, FileText, TrendingDown,
-  Award, Star
+  Award, Star, IndianRupee
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -117,7 +117,7 @@ export function PlanRecommendationCard({
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <IndianRupee className="h-4 w-4 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium" data-testid="text-premium">
                 {formatCurrency(estimatedPremium)}/yr
@@ -142,7 +142,7 @@ export function PlanRecommendationCard({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <IndianRupee className="h-4 w-4 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium">{plan.coPayPct}%</p>
               <p className="text-xs text-muted-foreground">Co-pay</p>

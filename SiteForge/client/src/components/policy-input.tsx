@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, DollarSign, Shield, Clock, AlertTriangle, Upload, FileText, Pencil } from "lucide-react";
+import { Building2, IndianRupee, Shield, Clock, AlertTriangle, Upload, FileText, Pencil } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -189,7 +189,7 @@ export function PolicyInput({ onPolicySubmit, initialPolicy, className }: Policy
 
                 <div className="space-y-2">
                   <Label htmlFor="annualPremium" className="flex items-center gap-1.5">
-                    <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                    <IndianRupee className="h-3.5 w-3.5 text-muted-foreground" />
                     Annual Premium (₹)
                   </Label>
                   <Input
@@ -220,7 +220,7 @@ export function PolicyInput({ onPolicySubmit, initialPolicy, className }: Policy
 
                 <div className="space-y-2">
                   <Label htmlFor="coPay" className="flex items-center gap-1.5">
-                    <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                    <IndianRupee className="h-3.5 w-3.5 text-muted-foreground" />
                     Co-pay (%)
                   </Label>
                   <Input
