@@ -52,7 +52,7 @@ const faqs = [
   },
   {
     question: "What file formats are supported?",
-    answer: "We support PDF documents and image files (JPG, PNG) up to 10MB. For best results, upload clear, high-resolution scans of your medical reports."
+    answer: "We support PDF documents and image files (JPG, PNG) up to 20MB. For best results, upload clear, high-resolution scans of your medical reports."
   },
   {
     question: "Is this free to use?",
