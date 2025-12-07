@@ -272,11 +272,23 @@ function generateLocalHealthSummary(
       ? report.diagnoses.map(d => `Diagnosed condition: ${d}`)
       : ["No specific diagnoses documented in report"],
     
-    futureHealthRisks: [
-      `Short-term risk (1-2 years): ${shortTermLabel} - Monitor closely`,
-      `Long-term risk (5-10 years): ${longTermLabel} - Consider preventive measures`,
-      `Age-related factors: Patient is ${report.age} years old`,
-    ],
+    futureHealthRisks: {
+      shortTerm: [
+        `${shortTermLabel} risk in next 1-2 years - Monitor your documented conditions closely`,
+        `Key risk factor: ${highRiskCount} elevated test values requiring medical attention`,
+      ],
+      longTerm: [
+        `${longTermLabel} risk in 5-10 years - Consider preventive measures now`,
+        `Age-related factor: Patient is ${report.age} years old - health maintenance increasingly important`,
+        `Multiple diagnoses compound long-term risk - regular specialist follow-up recommended`,
+      ],
+      preventiveMeasures: [
+        "Regular medical check-ups (every 6-12 months)",
+        "Monitor documented health conditions closely",
+        "Follow medical advice for any diagnosed conditions",
+        "For comprehensive AI-powered risk prediction, please enable API quota",
+      ],
+    },
     
     recommendations: [
       "Regular medical check-ups recommended",
@@ -284,6 +296,17 @@ function generateLocalHealthSummary(
       "Follow medical advice for any diagnosed conditions",
       "For comprehensive AI-powered analysis, please try again when API quota resets",
     ],
+
+    insuranceInsights: {
+      coverageGaps: `Based on ${report.diagnoses.length > 0 ? report.diagnoses.join(", ") : "current health status"}, patient may need comprehensive coverage`,
+      riskProfile: shortTermLabel,
+      recommendedCoverage: [
+        "Comprehensive hospitalization coverage",
+        "Outpatient care coverage for ongoing management",
+        "Specialist consultation access",
+        "Regular health check-up coverage",
+      ],
+    },
     
     riskScore: {
       shortTerm: shortTermRisk,

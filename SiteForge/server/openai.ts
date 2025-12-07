@@ -264,61 +264,95 @@ async function generateHealthSummary(report: MedicalReport, clinicalNotes?: stri
   try {
     const model = client.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    const prompt = `Analyze this patient's medical report and generate a comprehensive health summary with detailed problem analysis and future health risks.
+    const prompt = `You are a medical AI specialist. Analyze this patient's medical report and generate a comprehensive health summary with detailed analysis of current conditions, future disease risks, and insurance coverage implications.
 
 Patient Profile:
-- Age: ${report.age}
+- Age: ${report.age} years old
 - Gender: ${report.gender}
 - Diagnoses: ${report.diagnoses.length > 0 ? report.diagnoses.join(", ") : "None documented"}
-- Medications: ${report.medications.length > 0 ? report.medications.join(", ") : "None documented"}
+- Current Medications: ${report.medications.length > 0 ? report.medications.join(", ") : "None documented"}
 - Smoking Status: ${report.smokingStatus}
 
 Test Results:
-${report.tests.map(t => `- ${t.name}: ${t.value} ${t.unit} (Range: ${t.range}) [${t.status}]`).join("\n")}
+${report.tests.map(t => `- ${t.name}: ${t.value} ${t.unit} (Normal Range: ${t.range}) [Status: ${t.status}]`).join("\n")}
 
 ${clinicalNotes ? `Clinical Notes: ${clinicalNotes}` : ""}
 
-Generate a DETAILED professional health summary in this JSON format:
+IMPORTANT: Based on the diagnoses and test results provided, analyze and predict:
+1. Which NEW diseases or conditions could develop in the next 1-2 years (short-term risk)
+2. Which complications or progressive conditions in 5-10 years (long-term risk)
+3. What insurance coverage they would need based on their health profile
+
+Generate a detailed professional health assessment in this JSON format:
 {
-  "summary": "2-3 sentence professional summary of the patient's current health status based on actual findings. Include severity assessment.",
+  "summary": "2-3 sentence overview of patient's current health status with severity level. Example: 'Patient is a 45-year-old with Type 2 Diabetes and borderline hypertension. Their HbA1c level of 7.8% indicates moderate glycemic control. This profile carries moderate short-term health risk and requires careful disease management.'",
+  
   "keyFindings": [
-    "List of 5-7 key findings from test results, diagnoses, and risk factors. Be specific with values."
+    "Specific test values with clinical significance. Example: 'HbA1c: 7.8% - indicates suboptimal diabetes control, target should be <7%'",
+    "List 5-7 important findings from actual test results and diagnoses"
   ],
+  
   "currentHealthIssues": [
-    "Detailed breakdown of each diagnosed condition and its severity",
-    "Description of abnormal test values and their medical implications",
-    "Lifestyle factors affecting health (smoking, medications, age-related risks)"
+    "For each diagnosis: specific severity, stage, and current status. Example: 'Type 2 Diabetes: Moderately controlled with metformin, HbA1c 7.8%, at risk for microvascular complications'",
+    "Abnormal test values: explain medical implications. Example: 'LDL Cholesterol 145 mg/dL: Elevated, increases cardiovascular risk; target <100 mg/dL for diabetic patients'",
+    "Lifestyle risk factors: smoking status, sedentary lifestyle, diet-related issues affecting current conditions"
   ],
-  "futureHealthRisks": [
-    "Short-term risks (1-2 years): What conditions or complications could develop",
-    "Long-term risks (5-10 years): Progressive disease complications and age-related risks",
-    "Preventive measures needed to mitigate these risks"
-  ],
+  
+  "futureHealthRisks": {
+    "shortTerm": [
+      "What diseases/conditions could develop in next 1-2 years based on current profile",
+      "Example for Type 2 Diabetes patient: 'Diabetic neuropathy (nerve damage), increased UTI infections, diabetic retinopathy progression'",
+      "List 3-4 specific conditions with brief medical explanation"
+    ],
+    "longTerm": [
+      "What complications could occur in 5-10 years if conditions worsen or aren't managed",
+      "Example: 'Chronic kidney disease (diabetic nephropathy), cardiovascular disease, vision loss from diabetic retinopathy'",
+      "List 3-4 progressive complications with medical rationale"
+    ],
+    "preventiveMeasures": [
+      "Specific preventive actions for each identified future risk",
+      "Example: 'Diabetic foot care to prevent neuropathic ulcers, annual eye exams for retinopathy screening'"
+    ]
+  },
+  
   "recommendations": [
-    "Medical management recommendations",
-    "Lifestyle changes to reduce risk",
-    "Monitoring and follow-up frequency recommendations",
-    "Warning signs to watch for that require immediate medical attention"
+    "Specific medical management: medication optimization, specialist referrals needed",
+    "Lifestyle interventions: diet changes, exercise frequency, weight management targets",
+    "Monitoring requirements: how often to check specific values, which specialists to see",
+    "Warning signs requiring immediate medical attention: symptoms indicating complications"
   ],
+  
+  "insuranceInsights": {
+    "coverageGaps": "What medical services this patient would need most based on their conditions",
+    "riskProfile": "High risk, Moderate risk, or Low risk designation based on conditions",
+    "recommendedCoverage": [
+      "List specific insurance features needed. Example: 'Comprehensive diabetes management coverage, annual preventive care visits, specialist access (endocrinologist, ophthalmologist)'",
+      "Maternity coverage if applicable, critical illness coverage recommendations"
+    ]
+  },
+  
   "riskScore": {
-    "shortTerm": 0-100 number (risk in next 1-2 years),
-    "longTerm": 0-100 number (risk in next 5-10 years),
+    "shortTerm": 0-100 number representing risk probability in next 1-2 years,
+    "longTerm": 0-100 number representing risk probability in next 5-10 years,
     "shortTermLabel": "Low" | "Moderate" | "High",
     "longTermLabel": "Low" | "Moderate" | "High",
     "factors": [
-      { "name": "factor name", "contribution": 1-100, "explanation": "specific impact on health and risk score" }
+      { "name": "factor name", "contribution": 1-100 (percentage contribution to overall risk), "explanation": "how this specific factor impacts health outcomes and insurance needs" }
     ]
   }
 }
 
-Risk Assessment Guidelines:
-- Weight all abnormal test values (high values carry more weight than borderline)
-- Age is a significant cumulative risk factor (increases with each decade above 40)
-- Multiple diagnoses compound risk significantly
-- Active smoking status increases all risks by 15-25 points
-- Medication use indicates chronic conditions and ongoing health issues
-- Consider interactions between conditions (e.g., diabetes + hypertension)
-- Provide specific, actionable insights, not generic statements`;
+RISK CALCULATION GUIDELINES:
+- Age factor: Baseline risk increases 10 points per decade above 40
+- Each abnormal/high test value: +15-20 points depending on severity
+- Each abnormal/borderline test value: +5-10 points
+- Multiple diagnoses: multiply baseline by 1.5x (compound effect)
+- Active smoking: +20 points
+- Medication use: indicates chronic condition, minimum +15 baseline
+- Family history (if mentioned): +10-15 points
+- Obesity/overweight (if indicated): +10 points
+
+Generate medically accurate, actionable insights based ONLY on the actual data provided.`;
 
     const response = await model.generateContent(prompt);
     const result = JSON.parse(response.response.text());
@@ -327,8 +361,17 @@ Risk Assessment Guidelines:
       summary: result.summary || "Your health profile shows some areas that may require attention.",
       keyFindings: result.keyFindings || [],
       currentHealthIssues: result.currentHealthIssues || [],
-      futureHealthRisks: result.futureHealthRisks || [],
+      futureHealthRisks: result.futureHealthRisks || {
+        shortTerm: [],
+        longTerm: [],
+        preventiveMeasures: []
+      },
       recommendations: result.recommendations || [],
+      insuranceInsights: result.insuranceInsights || {
+        coverageGaps: "",
+        riskProfile: "Moderate",
+        recommendedCoverage: []
+      },
       riskScore: {
         shortTerm: result.riskScore?.shortTerm || 35,
         longTerm: result.riskScore?.longTerm || 45,

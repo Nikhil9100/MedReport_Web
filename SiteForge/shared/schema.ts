@@ -45,8 +45,17 @@ export const healthSummarySchema = z.object({
   summary: z.string(),
   keyFindings: z.array(z.string()),
   currentHealthIssues: z.array(z.string()).optional(),
-  futureHealthRisks: z.array(z.string()).optional(),
+  futureHealthRisks: z.object({
+    shortTerm: z.array(z.string()).optional(),
+    longTerm: z.array(z.string()).optional(),
+    preventiveMeasures: z.array(z.string()).optional(),
+  }).optional(),
   recommendations: z.array(z.string()).optional(),
+  insuranceInsights: z.object({
+    coverageGaps: z.string().optional(),
+    riskProfile: z.string().optional(),
+    recommendedCoverage: z.array(z.string()).optional(),
+  }).optional(),
   riskScore: riskScoreSchema,
 });
 

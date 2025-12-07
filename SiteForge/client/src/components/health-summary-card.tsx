@@ -107,30 +107,113 @@ export function HealthSummaryCard({ summary, className }: HealthSummaryCardProps
           </div>
         )}
 
-        {summary.futureHealthRisks && summary.futureHealthRisks.length > 0 && (
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Future Health Risks
+        {summary.futureHealthRisks && (
+          <>
+            {summary.futureHealthRisks.shortTerm && summary.futureHealthRisks.shortTerm.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  ⚠️ Short-term Health Risks (1-2 years)
+                </h4>
+                <ul className="space-y-2">
+                  {summary.futureHealthRisks.shortTerm.map((risk, index) => (
+                    <li 
+                      key={index}
+                      className="flex items-start gap-2 text-sm"
+                      data-testid={`text-short-term-risk-${index}`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0" />
+                      <span>{risk}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {summary.futureHealthRisks.longTerm && summary.futureHealthRisks.longTerm.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  📊 Long-term Health Risks (5-10 years)
+                </h4>
+                <ul className="space-y-2">
+                  {summary.futureHealthRisks.longTerm.map((risk, index) => (
+                    <li 
+                      key={index}
+                      className="flex items-start gap-2 text-sm"
+                      data-testid={`text-long-term-risk-${index}`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-2 shrink-0" />
+                      <span>{risk}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {summary.futureHealthRisks.preventiveMeasures && summary.futureHealthRisks.preventiveMeasures.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  ✅ Preventive Measures
+                </h4>
+                <ul className="space-y-2">
+                  {summary.futureHealthRisks.preventiveMeasures.map((measure, index) => (
+                    <li 
+                      key={index}
+                      className="flex items-start gap-2 text-sm"
+                      data-testid={`text-preventive-measure-${index}`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" />
+                      <span>{measure}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+
+        {summary.insuranceInsights && (
+          <div className="space-y-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+            <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 uppercase tracking-wide">
+              🏥 Insurance Recommendations
             </h4>
-            <ul className="space-y-2">
-              {summary.futureHealthRisks.map((risk, index) => (
-                <li 
-                  key={index}
-                  className="flex items-start gap-2 text-sm"
-                  data-testid={`text-future-risk-${index}`}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0" />
-                  <span>{risk}</span>
-                </li>
-              ))}
-            </ul>
+            
+            {summary.insuranceInsights.riskProfile && (
+              <div className="text-sm">
+                <span className="font-medium text-blue-900 dark:text-blue-100">Your Risk Profile: </span>
+                <span className="text-blue-800 dark:text-blue-200">{summary.insuranceInsights.riskProfile}</span>
+              </div>
+            )}
+
+            {summary.insuranceInsights.coverageGaps && (
+              <div className="text-sm">
+                <span className="font-medium text-blue-900 dark:text-blue-100">Coverage Needs: </span>
+                <span className="text-blue-800 dark:text-blue-200">{summary.insuranceInsights.coverageGaps}</span>
+              </div>
+            )}
+
+            {summary.insuranceInsights.recommendedCoverage && summary.insuranceInsights.recommendedCoverage.length > 0 && (
+              <div className="space-y-2">
+                <p className="font-medium text-blue-900 dark:text-blue-100 text-sm">Recommended Coverage Features:</p>
+                <ul className="space-y-1">
+                  {summary.insuranceInsights.recommendedCoverage.map((coverage, index) => (
+                    <li 
+                      key={index}
+                      className="flex items-start gap-2 text-sm text-blue-800 dark:text-blue-200"
+                    >
+                      <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
+                      <span>{coverage}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
         {summary.recommendations && summary.recommendations.length > 0 && (
           <div className="space-y-3">
             <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Recommendations
+              Medical Recommendations
             </h4>
             <ul className="space-y-2">
               {summary.recommendations.map((rec, index) => (
