@@ -5,7 +5,8 @@ MedReport is a healthcare insurance recommendation platform that analyzes medica
 
 ## Current State
 - **MVP Features Implemented**: Complete end-to-end flow from upload to recommendations
-- **Status**: Fully functional with OpenAI-powered medical extraction
+- **Status**: Fully functional with Google Gemini 2.0 Flash AI-powered medical extraction
+- **API Status**: ✅ Google Gemini API Key Configured and Active
 
 ## User Flow
 1. **Landing Page** → Hero with CTAs to upload report or compare policy
@@ -58,8 +59,8 @@ Net Annual Cost = Premium + Expected OOP
 Savings = Existing Policy Cost - Recommended Plan Cost
 
 ## Environment Variables
-- `OPENAI_API_KEY` - Required for medical extraction (gpt-5 model)
-- `SESSION_SECRET` - For session management
+- `GOOGLE_API_KEY` - ✅ Configured and active for Gemini 2.0 Flash API
+- `SESSION_SECRET` - For session management (auto-generated if not provided)
 
 ## Design System
 - Primary color: Healthcare blue (HSL 199 89% 48%)
