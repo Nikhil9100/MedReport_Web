@@ -3,6 +3,7 @@ import type { MedicalReport, HealthSummary, RiskScore, MedicalTest } from "@shar
 import { parsePDF, base64ToBuffer, isMedicalContent } from "./pdfParser";
 import { checkRateLimit, getQuotaWarning } from "./gemini-rate-limiter";
 import { getCachedReport, cacheReport, generateFileHash } from "./report-cache";
+import { performLocalAnalysis } from "./fallback-analyzer";
 
 // Using Google Gemini API for medical report analysis
 let genAI: GoogleGenerativeAI | null = null;
@@ -192,15 +193,27 @@ ${contentToAnalyze}`;
     const errorMessage = error instanceof Error ? error.message : String(error);
     
     if (errorMessage.includes("Quota exceeded") || errorMessage.includes("quota")) {
-      throw new Error(
-        "Google API free tier quota reached for today. The free tier allows 60 requests per minute and has daily limits. " +
-        "Please try again tomorrow (quota resets daily at midnight UTC). " +
-        "Alternatively, you can:\n" +
-        "1. Upload the same file again (we cache results to save API calls)\n" +
-        "2. Use Google's paid plan (very affordable - usually under $1/month)\n" +
-        "3. Wait and try tomorrow\n\n" +
-        "Current status: " + getQuotaWarning()
-      );
+      // Use fallback analysis instead of failing completely
+      console.warn("⚠️ API quota exceeded - using local fallback analysis");
+      
+      if (fileType === "pdf") {
+        const buffer = base64ToBuffer(fileData);
+        const parseResult = await parsePDF(buffer);
+        pdfText = parseResult.text;
+      } else {
+        pdfText = fileData;
+      }
+
+      const { medicalReport, healthSummary } = performLocalAnalysis(pdfText);
+      
+      // Add note about fallback mode
+      healthSummary.summary = "⚠️ FALLBACK MODE (No API quota): " + healthSummary.summary;
+      healthSummary.keyFindings.unshift("Analysis performed with local processing (API quota exceeded)");
+
+      // Cache the fallback result too
+      cacheReport(fileData, fileName, medicalReport, healthSummary);
+      
+      return { medicalReport, healthSummary };
     }
     
     if (errorMessage.includes("API key not valid") || errorMessage.includes("Invalid API")) {
