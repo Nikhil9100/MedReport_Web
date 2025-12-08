@@ -19,6 +19,7 @@ import { BudgetPreferences } from "@/components/budget-preferences";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ReportSession, MedicalTest, Policy, MatchPreferences } from "@shared/schema";
+import type { ExtractedMedicalReport } from "../../../shared/schema";
 
 export function ReviewPage() {
   const [, params] = useRoute("/review/:id");
@@ -161,7 +162,7 @@ export function ReviewPage() {
             </div>
 
             {report.medicalReport && (
-              <ExtractedReportDisplay report={report.medicalReport} />
+              <ExtractedReportDisplay report={toExtracted(report.medicalReport)} />
             )}
 
             {report.healthSummary && (
@@ -291,4 +292,35 @@ export function ReviewPage() {
       </main>
     </div>
   );
+}
+
+function toExtracted(m: ReportSession["medicalReport"]): ExtractedMedicalReport {
+  const diagnoses = (m?.diagnoses || []).map(d => ({ name: d, icd10_code: null, raw: d, confidence: 0.75 }));
+  const tests = (m?.tests || []).map(t => ({
+    name: t.name,
+    value: t.value as any,
+    unit: t.unit || null,
+    ref_low: null,
+    ref_high: null,
+    raw: `${t.name}: ${t.value}${t.unit?" "+t.unit:""}`,
+    confidence: 0.75,
+  }));
+  return {
+    report_id: null,
+    timestamp: new Date().toISOString(),
+    extraction_status: "partial",
+    extraction_confidence: 0.75,
+    patient: { name: null, age: m?.age ?? null, sex: (m?.gender as any) ?? null, patient_id: null, city_or_state: null },
+    diagnoses,
+    medications: (m?.medications || []).map(name => ({ name, dose: null, frequency: null, route: null, raw: name, confidence: 0.7 })),
+    tests,
+    vitals: { bp: null, systolic: null, diastolic: null, hr: null, spo2: null, rr: null, temp_c: null, raw: null, confidence: 0 },
+    procedures: [],
+    allergies: [],
+    smoking_status: { status: (m?.smokingStatus as any) ?? null, raw: m?.smokingStatus ?? null, confidence: 0.7 },
+    notes: null,
+    raw_text: m?.rawText ?? null,
+    warnings: [],
+    source: { document_type_hint: null, page_count_estimate: null },
+  };
 }

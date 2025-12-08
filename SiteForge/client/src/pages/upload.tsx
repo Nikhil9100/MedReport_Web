@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { ReportSession } from "@shared/schema";
 import { extractOCR } from "@/lib/ocr";
+import type { ExtractedMedicalReport } from "../../../shared/schema";
+import { ExtractedReportDisplay } from "@/components/extracted-report-display";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -21,7 +23,7 @@ export function UploadPage() {
   const [showConsent, setShowConsent] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
   const [ocrText, setOcrText] = useState("");
-  const [ocrResult, setOcrResult] = useState<any | null>(null);
+  const [ocrResult, setOcrResult] = useState<ExtractedMedicalReport | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
 
   const uploadMutation = useMutation({
@@ -212,9 +214,9 @@ export function UploadPage() {
                 )}
               </div>
               {ocrResult && (
-                <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-64 whitespace-pre-wrap">
-                  {JSON.stringify(ocrResult, null, 2)}
-                </pre>
+                <div className="mt-4">
+                  <ExtractedReportDisplay report={ocrResult} />
+                </div>
               )}
             </Card>
           </div>

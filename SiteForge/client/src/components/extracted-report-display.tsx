@@ -1,52 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle, AlertTriangle, Pill, User, BarChart3 } from "lucide-react";
-import type { MedicalReport, MedicalTest } from "@shared/schema";
+import { AlertCircle, AlertTriangle, Pill, User, BarChart3 } from "lucide-react";
+import type { ExtractedMedicalReport } from "../../../shared/schema";
 
 interface ExtractedReportDisplayProps {
-  report: MedicalReport;
+  report: ExtractedMedicalReport;
   className?: string;
 }
 
 export function ExtractedReportDisplay({ report, className }: ExtractedReportDisplayProps) {
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case "high":
-        return "bg-red-100 text-red-700 border border-red-300";
-      case "borderline":
-        return "bg-amber-100 text-amber-700 border border-amber-300";
-      case "normal":
-        return "bg-emerald-100 text-emerald-700 border border-emerald-300";
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "normal":
-        return <CheckCircle className="w-4 h-4 text-emerald-600" />;
-      case "borderline":
-        return <AlertTriangle className="w-4 h-4 text-amber-600" />;
-      case "high":
-        return <AlertCircle className="w-4 h-4 text-red-600" />;
-      default:
-        return null;
-    }
-  };
-
-  const getRowColor = (status: string) => {
-    switch (status) {
-      case "high":
-        return "bg-red-50";
-      case "borderline":
-        return "bg-amber-50";
-      case "normal":
-        return "bg-emerald-50";
-      default:
-        return "bg-white";
-    }
-  };
+  const lowConf = (c?: number | null) => (c ?? 0) < 0.7;
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -63,15 +26,17 @@ export function ExtractedReportDisplay({ report, className }: ExtractedReportDis
             <tbody>
               <tr className="border-b border-blue-200 hover:bg-blue-50">
                 <td className="py-4 px-4 font-semibold text-gray-700 bg-blue-100 w-1/3">Age</td>
-                <td className="py-4 px-4 text-gray-900 font-bold text-lg">{report.age} years</td>
+                <td className="py-4 px-4 text-gray-900 font-bold text-lg">{report.patient.name ?? "—"}</td>
               </tr>
               <tr className="border-b border-blue-200 hover:bg-blue-50">
                 <td className="py-4 px-4 font-semibold text-gray-700 bg-blue-100 w-1/3">Gender</td>
-                <td className="py-4 px-4 text-gray-900 font-bold text-lg">{report.gender}</td>
+                <td className="py-4 px-4 text-gray-900 font-bold text-lg">{report.patient.age ?? "—"} years</td>
               </tr>
               <tr className="hover:bg-blue-50">
                 <td className="py-4 px-4 font-semibold text-gray-700 bg-blue-100 w-1/3">Smoking Status</td>
-                <td className="py-4 px-4 text-gray-900 font-bold text-lg">{report.smokingStatus || "Not specified"}</td>
+                <td className={`py-4 px-4 font-bold text-lg ${lowConf(report.smoking_status.confidence) ? "text-amber-700" : "text-gray-900"}`}>
+                  {report.smoking_status.status ?? "Not specified"}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -89,12 +54,17 @@ export function ExtractedReportDisplay({ report, className }: ExtractedReportDis
           <CardContent className="p-0">
             <table className="w-full text-sm">
               <tbody>
-                {report.diagnoses.map((diagnosis, idx) => (
+                {report.diagnoses.map((d, idx) => (
                   <tr key={idx} className={`border-b border-red-200 ${idx % 2 === 0 ? "bg-red-50" : "bg-white"} hover:bg-red-100`}>
                     <td className="py-3 px-4 text-center w-12">
                       <span className="inline-block bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold">{idx + 1}</span>
                     </td>
-                    <td className="py-3 px-4 text-gray-900 font-medium">{diagnosis}</td>
+                    <td className="py-3 px-4 text-gray-900 font-medium">
+                      {d.name}
+                      {lowConf(d.confidence) && (
+                        <Badge className="ml-2 bg-amber-100 text-amber-800 border border-amber-300 text-xs">low confidence</Badge>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -120,28 +90,29 @@ export function ExtractedReportDisplay({ report, className }: ExtractedReportDis
                   <th className="py-3 px-4 text-left font-semibold">Test Name</th>
                   <th className="py-3 px-4 text-center font-semibold">Value</th>
                   <th className="py-3 px-4 text-center font-semibold">Unit</th>
-                  <th className="py-3 px-4 text-center font-semibold">Reference Range</th>
-                  <th className="py-3 px-4 text-center font-semibold">Status</th>
+                  <th className="py-3 px-4 text-center font-semibold">Ref Low</th>
+                  <th className="py-3 px-4 text-center font-semibold">Ref High</th>
+                  <th className="py-3 px-4 text-center font-semibold">Confidence</th>
                 </tr>
               </thead>
               <tbody>
-                {report.tests.map((test: MedicalTest, idx: number) => (
+                {report.tests.map((t, idx: number) => (
                   <tr 
-                    key={idx} 
-                    className={`border-b border-gray-300 ${getRowColor(test.status)} hover:opacity-80 transition`}
+                    key={idx}
+                    className={`border-b border-gray-300 hover:opacity-80 transition ${lowConf(t.confidence) ? "bg-amber-50" : "bg-white"}`}
                   >
                     <td className="py-3 px-4 font-bold text-gray-800">{idx + 1}</td>
-                    <td className="py-3 px-4 font-medium text-gray-900">{test.name}</td>
-                    <td className="py-3 px-4 text-center font-bold text-gray-900">{test.value}</td>
-                    <td className="py-3 px-4 text-center text-gray-700">{test.unit}</td>
-                    <td className="py-3 px-4 text-center text-gray-700">{test.range}</td>
+                    <td className="py-3 px-4 font-medium text-gray-900">{t.name}</td>
+                    <td className="py-3 px-4 text-center font-bold text-gray-900">{t.value as any}</td>
+                    <td className="py-3 px-4 text-center text-gray-700">{t.unit ?? ""}</td>
+                    <td className="py-3 px-4 text-center text-gray-700">{t.ref_low ?? ""}</td>
+                    <td className="py-3 px-4 text-center text-gray-700">{t.ref_high ?? ""}</td>
                     <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {getStatusIcon(test.status)}
-                        <Badge className={`capitalize text-xs font-semibold ${getStatusBadgeColor(test.status)}`}>
-                          {test.status}
-                        </Badge>
-                      </div>
+                      {lowConf(t.confidence) ? (
+                        <Badge className="bg-amber-100 text-amber-800 border border-amber-300 text-xs">low</Badge>
+                      ) : (
+                        <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs">high</Badge>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -194,7 +165,7 @@ export function ExtractedReportDisplay({ report, className }: ExtractedReportDis
           <CardContent className="p-0">
             <table className="w-full text-sm">
               <tbody>
-                {report.medications.map((medication, idx) => (
+                {report.medications.map((m, idx) => (
                   <tr 
                     key={idx} 
                     className={`border-b border-green-200 ${idx % 2 === 0 ? "bg-green-50" : "bg-white"} hover:bg-green-100`}
@@ -202,7 +173,13 @@ export function ExtractedReportDisplay({ report, className }: ExtractedReportDis
                     <td className="py-3 px-4 text-center w-12 font-bold">
                       <span className="inline-block bg-green-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs">{idx + 1}</span>
                     </td>
-                    <td className="py-3 px-4 text-gray-900 font-medium">{medication}</td>
+                    <td className="py-3 px-4 text-gray-900 font-medium">
+                      {m.name}
+                      {m.dose ? ` • ${m.dose}` : ""} {m.frequency ? ` • ${m.frequency}` : ""}
+                      {lowConf(m.confidence) && (
+                        <Badge className="ml-2 bg-amber-100 text-amber-800 border border-amber-300 text-xs">low confidence</Badge>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -232,11 +209,56 @@ export function ExtractedReportDisplay({ report, className }: ExtractedReportDis
             </div>
             <div className="bg-white p-4 rounded-lg border-2 border-red-300 text-center">
               <div className="text-xs font-bold text-red-600 uppercase">Critical Issues</div>
-              <div className="text-3xl font-bold text-red-700 mt-2">{report.tests.filter(t => t.status === "high").length}</div>
+              <div className="text-3xl font-bold text-red-700 mt-2">{report.warnings.length}</div>
             </div>
           </div>
         </CardContent>
       </Card>
+      {/* Vitals */}
+      <Card className="border-2 border-gray-300">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-bold">🩺 Vitals</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div className={`bg-white p-4 rounded-lg border ${lowConf(report.vitals.confidence) ? "border-amber-300 bg-amber-50" : "border-gray-300"}`}>
+              <div className="text-xs font-bold text-gray-600 uppercase">Blood Pressure</div>
+              <div className="text-lg font-bold text-gray-900 mt-1">{report.vitals.bp ?? "—"}</div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-gray-300">
+              <div className="text-xs font-bold text-gray-600 uppercase">Heart Rate</div>
+              <div className="text-lg font-bold text-gray-900 mt-1">{report.vitals.hr ?? "—"}</div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-gray-300">
+              <div className="text-xs font-bold text-gray-600 uppercase">SpO₂</div>
+              <div className="text-lg font-bold text-gray-900 mt-1">{report.vitals.spo2 ?? "—"}</div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-gray-300">
+              <div className="text-xs font-bold text-gray-600 uppercase">Temp (°C)</div>
+              <div className="text-lg font-bold text-gray-900 mt-1">{report.vitals.temp_c ?? "—"}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Warnings */}
+      {report.warnings.length > 0 && (
+        <Card className="border-2 border-amber-300 bg-amber-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-700" />
+              Warnings ({report.warnings.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="list-disc pl-6 text-sm text-amber-900">
+              {report.warnings.map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { extractedMedicalReportSchema } from "../shared/schema";
 
 const OcrExtractRequest = z.object({
   ocr_text: z.string().min(1, "ocr_text required"),
@@ -82,17 +83,46 @@ export function extractFromOCR(reqBody: unknown) {
   if (!sexMatch) warnings.push("sex missing");
   if (!diagnoses.length) warnings.push("diagnoses missing");
 
+  // Abnormal value warnings (basic rules)
+  for (const t of tests) {
+    if (t.name.toLowerCase() === "hba1c" && typeof t.value === "number") {
+      if (t.value > 5.6) warnings.push(`HbA1c ${t.value}% above ref 5.6%`);
+    }
+    if (t.name.toLowerCase() === "ldl" && typeof t.value === "number") {
+      if (t.value > 130) warnings.push(`LDL ${t.value} above typical ref 130`);
+    }
+    if (t.name.toLowerCase() === "total cholesterol" && typeof t.value === "number") {
+      if (t.value > 200) warnings.push(`Total Cholesterol ${t.value} above typical ref 200`);
+    }
+  }
+
+  // BP abnormal thresholds
+  if (systolic && systolic > 140) warnings.push(`BP systolic ${systolic} > 140`);
+  if (diastolic && diastolic > 90) warnings.push(`BP diastolic ${diastolic} > 90`);
+
   const cleaned = cleanText(text);
   const summaryParts: string[] = [];
   if (ageMatch && sexMatch) summaryParts.push(`${ageMatch[1]}-year-old ${sexMatch[1]}`);
   if (diagnoses.length) summaryParts.push(diagnoses.map(d => d.name).join(", "));
   if (tests.length) summaryParts.push(tests.slice(0,3).map(t => `${t.name} ${t.value}${t.unit?" "+t.unit:""}`).join(", "));
 
+  // Compute overall extraction confidence based on available confidences
+  const confidences: number[] = [];
+  if (bpMatch) confidences.push(0.85);
+  for (const d of diagnoses) confidences.push(d.confidence ?? 0.7);
+  for (const t of tests) confidences.push(t.confidence ?? 0.7);
+  for (const m of meds) confidences.push(m.confidence ?? 0.7);
+  const overallConfidence = confidences.length
+    ? Math.min(1, Math.max(0, confidences.reduce((a, b) => a + b, 0) / confidences.length))
+    : hasData ? 0.7 : 0.0;
+
+  if (overallConfidence < 0.6) warnings.push("overall confidence below threshold; consider fallback");
+
   const body = {
     report_id: null,
     timestamp: nowISO(),
     extraction_status: hasData ? "partial" : "insufficient_data",
-    extraction_confidence: hasData ? 0.7 : 0.0,
+    extraction_confidence: overallConfidence,
     patient: {
       name: nameMatch ? nameMatch[1].trim() : null,
       age: ageMatch ? Number(ageMatch[1]) : null,
@@ -123,7 +153,15 @@ export function extractFromOCR(reqBody: unknown) {
     source: { document_type_hint: document_context?.document_type_hint ?? null, page_count_estimate: null },
   };
 
-  return { status: 200, body };
+  const validated = extractedMedicalReportSchema.safeParse(body);
+  if (!validated.success) {
+    // Fallback to insufficient_data with validation errors as warnings
+    const warn = validated.error.errors.map(e => `schema error: ${e.path.join(".")} ${e.message}`);
+    const insufficient = buildInsufficient("Schema validation failed");
+    insufficient.warnings = insufficient.warnings.concat(warn);
+    return { status: 200, body: insufficient };
+  }
+  return { status: 200, body: validated.data };
 }
 
 function buildInsufficient(msg: string) {

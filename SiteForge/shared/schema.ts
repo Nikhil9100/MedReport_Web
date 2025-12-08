@@ -178,3 +178,101 @@ export const insertUserSchema = z.object({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = { id: string; username: string; password: string };
+
+// Extracted Medical Report (LLM/OCR output) — matches OUTPUT_SCHEMA exactly
+export const extractedMedicalReportSchema = z.object({
+  report_id: z.string().nullable(),
+  timestamp: z.string(), // ISO8601
+  extraction_status: z.enum(["success", "partial", "insufficient_data"]),
+  extraction_confidence: z.number().min(0).max(1),
+  patient: z.object({
+    name: z.string().nullable(),
+    age: z.number().nullable(),
+    sex: z.enum(["Male", "Female", "Other"]).nullable(),
+    patient_id: z.string().nullable(),
+    city_or_state: z.string().nullable(),
+  }),
+  diagnoses: z.array(
+    z.object({
+      name: z.string(),
+      icd10_code: z.string().nullable(),
+      raw: z.string(),
+      confidence: z.number().min(0).max(1),
+    })
+  ),
+  medications: z.array(
+    z.object({
+      name: z.string(),
+      dose: z.string().nullable(),
+      frequency: z.string().nullable(),
+      route: z.string().nullable(),
+      raw: z.string(),
+      confidence: z.number().min(0).max(1),
+    })
+  ),
+  tests: z.array(
+    z.object({
+      name: z.string(),
+      value: z.union([z.number(), z.string()]),
+      unit: z.string().nullable().optional(),
+      ref_low: z.number().nullable().optional(),
+      ref_high: z.number().nullable().optional(),
+      raw: z.string(),
+      confidence: z.number().min(0).max(1),
+      notes: z.string().optional(),
+    })
+  ),
+  vitals: z.object({
+    bp: z.string().nullable(),
+    systolic: z.number().nullable(),
+    diastolic: z.number().nullable(),
+    hr: z.number().nullable(),
+    spo2: z.number().nullable(),
+    rr: z.number().nullable(),
+    temp_c: z.number().nullable(),
+    raw: z.string().nullable(),
+    confidence: z.number().min(0).max(1),
+  }),
+  procedures: z.array(
+    z.object({
+      type: z.string(),
+      findings: z.string(),
+      impression: z.string().nullable(),
+      date: z.string().nullable(), // ISO8601 or null
+      raw: z.string(),
+      confidence: z.number().min(0).max(1),
+    })
+  ),
+  allergies: z.array(
+    z.object({
+      substance: z.string(),
+      reaction: z.string().nullable(),
+      raw: z.string(),
+      confidence: z.number().min(0).max(1),
+    })
+  ),
+  smoking_status: z.object({
+    status: z.enum(["Current", "Former", "Never"]).nullable(),
+    raw: z.string().nullable(),
+    confidence: z.number().min(0).max(1),
+  }),
+  notes: z.string().nullable(),
+  raw_text: z.string().nullable(),
+  warnings: z.array(z.string()),
+  source: z.object({
+    document_type_hint: z
+      .enum([
+        "lab_report",
+        "discharge_summary",
+        "prescription",
+        "echo_report",
+        "ecg_report",
+        "imaging_report",
+        "other",
+      ])
+      .nullable(),
+    page_count_estimate: z.number().nullable(),
+  }),
+});
+
+export type ExtractedMedicalReport = z.infer<typeof extractedMedicalReportSchema>;
