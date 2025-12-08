@@ -4,14 +4,14 @@
 MedReport is a healthcare insurance recommendation platform that analyzes medical reports, compares policies, and provides personalized plan suggestions with clear savings calculations.
 
 ## Current State
-- **MVP Features Implemented**: Complete end-to-end flow from upload to recommendations
-- **Status**: Fully functional with Google Gemini 2.0 Flash AI-powered medical extraction
-- **API Status**: ✅ Google Gemini API Key Configured and Active
+- **MVP Features Implemented**: End-to-end flow from upload to recommendations
+- **Status**: AI extraction via Google Gemini with robust local fallback
+- **API Status**: ✅ GOOGLE_API_KEY supported; falls back locally if quota/rate-limited
 
 ## User Flow
 1. **Landing Page** → Hero with CTAs to upload report or compare policy
 2. **Upload** → Drag & drop medical report (PDF/image)
-3. **Extraction** → AI extracts medical data, shows editable fields
+3. **Extraction** → AI extracts medical data when available; local OCR parser provides deterministic extraction without AI
 4. **Review** → User verifies data, adds existing policy, sets preferences
 5. **Recommendations** → Top 3 plans with match scores, savings comparison
 6. **Download** → One-page PDF report
@@ -29,17 +29,20 @@ MedReport is a healthcare insurance recommendation platform that analyzes medica
   - `POST /api/upload` - Upload and extract medical data
   - `GET /api/report/:id` - Fetch report session
   - `POST /api/report/:id/match` - Generate plan recommendations
+   - `POST /api/ocr-extract` - Deterministic extraction from pasted OCR text (quota-free)
   - `POST /api/report/:id/export` - Generate PDF export
   - `POST /api/policy/parse` - Parse uploaded policy
   - `GET /api/plans` - Get available insurance plans
 
 ### Key Files
 - `shared/schema.ts` - All TypeScript types and Zod schemas
-- `server/openai.ts` - OpenAI integration for medical extraction
+- `server/openai.ts` - Gemini AI integration with quota-aware fallback
+- `server/ocrExtractor.ts` - Deterministic OCR text parser returning strict OUTPUT_SCHEMA
 - `server/matching.ts` - Plan matching algorithm and scoring
 - `server/storage.ts` - In-memory storage for sessions and plans
 - `client/src/pages/` - Page components (landing, upload, review, recommendations)
 - `client/src/components/` - Reusable UI components
+- `client/src/lib/ocr.ts` - Client helper for `/api/ocr-extract`
 
 ## Data Models
 - **MedicalReport**: Patient info, tests, diagnoses
@@ -59,7 +62,7 @@ Net Annual Cost = Premium + Expected OOP
 Savings = Existing Policy Cost - Recommended Plan Cost
 
 ## Environment Variables
-- `GOOGLE_API_KEY` - ✅ Configured and active for Gemini 2.0 Flash API
+- `GOOGLE_API_KEY` - ✅ Supported; if quota/rate-limited, system uses local analysis
 - `SESSION_SECRET` - For session management (auto-generated if not provided)
 
 ## Design System
@@ -80,13 +83,11 @@ Frontend runs on port 5000.
 - **Hosting**: Render.com (Docker containerized)
 
 ## Recent Improvements (Session 3)
-- ✅ Fixed AI analysis by adding dotenv for GOOGLE_API_KEY loading
-- ✅ Removed "local analysis without AI" warning messages
-- ✅ Added comprehensive medical report display component
-- ✅ Integrated extracted report viewer on review page
-- ✅ Created AI setup guide for proper Gemini API configuration
-- ✅ Implemented proper fallback analyzer without API messages
-- ✅ Added environment variable configuration
+- ✅ Added robust fallback flow when Gemini quota/rate-limited
+- ✅ Implemented deterministic OCR extraction endpoint (`POST /api/ocr-extract`)
+- ✅ Added Upload page panel to paste OCR text and preview structured output
+- ✅ Enhanced error handling and caching in AI extraction path
+- ✅ Created AI setup guide; clarified quota behavior and local fallback
 
 ## Features
 - **Medical Data Extraction**: AI extracts name, age, gender, diagnoses, test values
@@ -111,6 +112,6 @@ Frontend runs on port 5000.
 See [AI_SETUP_GUIDE.md](../AI_SETUP_GUIDE.md) for detailed instructions, troubleshooting, and advanced configuration.
 
 ### API Details
-- **Service**: Google Gemini 2.0 Flash
-- **Cost**: FREE (2M tokens/month)
-- **Features**: Medical data extraction, disease risk prediction, insurance recommendations
+- **Service**: Google Gemini 2.0 Flash (with local fallback)
+- **Cost**: Free tier subject to quotas; local OCR parser is quota-free
+- **Features**: Medical extraction (AI or local), disease risk prediction, insurance recommendations
