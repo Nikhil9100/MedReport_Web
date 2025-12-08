@@ -26,11 +26,11 @@ export function ExtractedReportDisplay({ report, className }: ExtractedReportDis
             <tbody>
               <tr className="border-b border-blue-200 hover:bg-blue-50">
                 <td className="py-4 px-4 font-semibold text-gray-700 bg-blue-100 w-1/3">Age</td>
-                <td className="py-4 px-4 text-gray-900 font-bold text-lg">{report.patient.name ?? "—"}</td>
+                <td className="py-4 px-4 text-gray-900 font-bold text-lg">{report.patient.age != null ? `${report.patient.age} years` : "—"}</td>
               </tr>
               <tr className="border-b border-blue-200 hover:bg-blue-50">
                 <td className="py-4 px-4 font-semibold text-gray-700 bg-blue-100 w-1/3">Gender</td>
-                <td className="py-4 px-4 text-gray-900 font-bold text-lg">{report.patient.age ?? "—"} years</td>
+                <td className="py-4 px-4 text-gray-900 font-bold text-lg">{report.patient.gender ?? "—"}</td>
               </tr>
               <tr className="hover:bg-blue-50">
                 <td className="py-4 px-4 font-semibold text-gray-700 bg-blue-100 w-1/3">Smoking Status</td>
@@ -75,9 +75,9 @@ export function ExtractedReportDisplay({ report, className }: ExtractedReportDis
 
       {/* Medical Tests Table - Professional Format */}
       {report.tests.length > 0 && (
-        <Card className="border-2 border-gray-400">
-          <CardHeader className="bg-gray-700 pb-3">
-            <CardTitle className="text-base font-bold flex items-center gap-2 text-white">
+        <Card className="border-2 border-gray-300 bg-white">
+          <CardHeader className="bg-gray-100 pb-3">
+            <CardTitle className="text-base font-bold flex items-center gap-2 text-gray-900">
               <BarChart3 className="h-5 w-5" />
               Medical Test Results ({report.tests.length} tests)
             </CardTitle>
@@ -85,7 +85,7 @@ export function ExtractedReportDisplay({ report, className }: ExtractedReportDis
           <CardContent className="p-0 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-900 text-white">
+                <tr className="bg-gray-200 text-gray-900">
                   <th className="py-3 px-4 text-left font-semibold">#</th>
                   <th className="py-3 px-4 text-left font-semibold">Test Name</th>
                   <th className="py-3 px-4 text-center font-semibold">Value</th>
@@ -99,7 +99,7 @@ export function ExtractedReportDisplay({ report, className }: ExtractedReportDis
                 {report.tests.map((t, idx: number) => (
                   <tr 
                     key={idx}
-                    className={`border-b border-gray-300 hover:opacity-80 transition ${lowConf(t.confidence) ? "bg-amber-50" : "bg-white"}`}
+                    className={`border-b border-gray-200 hover:bg-gray-50 transition ${lowConf(t.confidence) ? "bg-amber-50" : "bg-white"}`}
                   >
                     <td className="py-3 px-4 font-bold text-gray-800">{idx + 1}</td>
                     <td className="py-3 px-4 font-medium text-gray-900">{t.name}</td>
