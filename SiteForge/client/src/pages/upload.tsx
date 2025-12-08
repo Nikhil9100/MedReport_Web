@@ -10,6 +10,9 @@ import { ConsentDialog } from "@/components/consent-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { ReportSession } from "@shared/schema";
+import { extractOCR } from "@/lib/ocr";
+import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 
 export function UploadPage() {
   const [, navigate] = useLocation();
@@ -17,6 +20,9 @@ export function UploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showConsent, setShowConsent] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
+  const [ocrText, setOcrText] = useState("");
+  const [ocrResult, setOcrResult] = useState<any | null>(null);
+  const [ocrLoading, setOcrLoading] = useState(false);
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File): Promise<ReportSession> => {
@@ -81,6 +87,21 @@ export function UploadPage() {
     } else {
       console.log("Uploading file...", selectedFile.name);
       uploadMutation.mutate(selectedFile);
+    }
+  };
+
+  const handleOcrExtract = async () => {
+    if (!ocrText.trim()) return;
+    try {
+      setOcrLoading(true);
+      setOcrResult(null);
+      const result = await extractOCR(ocrText, { document_type_hint: "lab_report", locale: "en-IN" });
+      setOcrResult(result);
+      toast({ title: "OCR extracted", description: "Structured data generated from pasted text." });
+    } catch (e: any) {
+      toast({ title: "OCR extraction failed", description: e?.message || "Unknown error", variant: "destructive" });
+    } finally {
+      setOcrLoading(false);
     }
   };
 
@@ -169,6 +190,33 @@ export function UploadPage() {
                 </button>
               </p>
             </div>
+
+            {/* Optional OCR paste-and-extract panel for fast local parsing */}
+            <Card className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium">Paste OCR Text (Optional)</h2>
+                <div className="text-sm text-muted-foreground">Uses local parser, no AI quota</div>
+              </div>
+              <Textarea
+                value={ocrText}
+                onChange={(e) => setOcrText(e.target.value)}
+                placeholder="Paste raw OCR text from clinical document"
+                className="min-h-[120px]"
+              />
+              <div className="flex items-center gap-2">
+                <Button onClick={handleOcrExtract} disabled={ocrLoading || !ocrText.trim()} className="gap-2">
+                  {ocrLoading ? (<><Loader2 className="h-4 w-4 animate-spin" /> Extracting...</>) : (<>Extract OCR</>)}
+                </Button>
+                {ocrResult && (
+                  <span className="text-sm text-muted-foreground">Status: {ocrResult.extraction_status}</span>
+                )}
+              </div>
+              {ocrResult && (
+                <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-64 whitespace-pre-wrap">
+                  {JSON.stringify(ocrResult, null, 2)}
+                </pre>
+              )}
+            </Card>
           </div>
         </div>
       </main>

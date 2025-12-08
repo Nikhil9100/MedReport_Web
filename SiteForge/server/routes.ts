@@ -8,6 +8,7 @@ import { validateMedicalFile, formatFileSize } from "./fileValidator";
 import { generateStructuredReport, formatReportAsJSON, formatReportAsHTML, formatReportAsCSV } from "./reportGenerator";
 import { generatePDFReport } from "./pdfGenerator";
 import { z } from "zod";
+import { extractFromOCR } from "./ocrExtractor";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -97,6 +98,17 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Get report error:", error);
       res.status(500).json({ error: "Failed to fetch report" });
+    }
+  });
+
+  // OCR text extraction endpoint returning strict OUTPUT_SCHEMA
+  app.post("/api/ocr-extract", async (req, res) => {
+    try {
+      const { status, body } = extractFromOCR(req.body);
+      res.status(status).json(body);
+    } catch (error) {
+      console.error("OCR extract error:", error);
+      res.status(500).json({ error: "Failed to extract from OCR text" });
     }
   });
 
